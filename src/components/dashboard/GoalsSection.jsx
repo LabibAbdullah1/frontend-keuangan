@@ -2,6 +2,19 @@ import React, { useState } from 'react';
 import { Target, Plus, Trash2, X, AlertTriangle, ArrowUpRight } from 'lucide-react';
 import { formatRupiah, formatDate } from '../../utils/format';
 
+// Format angka dengan titik pemisah ribuan saat mengetik
+const formatThousands = (val) => {
+  if (!val) return '';
+  const clean = val.replace(/\D/g, '');
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+// Konversi kembali ke angka murni sebelum dikirim ke API
+const parseRawNumber = (val) => {
+  if (!val) return 0;
+  return parseFloat(val.replace(/\./g, '')) || 0;
+};
+
 export default function GoalsSection({ goals, addGoal, contributeGoal, removeGoal }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [name, setName] = useState('');
@@ -20,14 +33,15 @@ export default function GoalsSection({ goals, addGoal, contributeGoal, removeGoa
     e.preventDefault();
     setFormError('');
     if (!name.trim()) return setFormError('Nama target tabungan harus diisi');
-    if (!targetAmount || parseFloat(targetAmount) <= 0) return setFormError('Target nominal harus lebih besar dari 0');
+    const rawTarget = parseRawNumber(targetAmount);
+    if (!rawTarget || rawTarget <= 0) return setFormError('Target nominal harus lebih besar dari 0');
     if (!targetDate) return setFormError('Tanggal deadline harus diisi');
 
     setSubmitting(true);
     const res = await addGoal({
       name: name.trim(),
-      target_amount: parseFloat(targetAmount),
-      current_amount: parseFloat(currentAmount || 0),
+      target_amount: rawTarget,
+      current_amount: parseRawNumber(currentAmount),
       target_date: targetDate
     });
 
@@ -44,9 +58,10 @@ export default function GoalsSection({ goals, addGoal, contributeGoal, removeGoa
   };
 
   const handleContribution = async (goalId) => {
-    if (!contribAmount || parseFloat(contribAmount) <= 0) return;
+    const rawContrib = parseRawNumber(contribAmount);
+    if (!rawContrib || rawContrib <= 0) return;
     setContribSubmitting(true);
-    const res = await contributeGoal(goalId, parseFloat(contribAmount));
+    const res = await contributeGoal(goalId, rawContrib);
     setContribSubmitting(false);
     if (res.success) {
       setContribAmount('');
@@ -103,23 +118,31 @@ export default function GoalsSection({ goals, addGoal, contributeGoal, removeGoa
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Target Dana (Rp)</label>
-                <input
-                  type="number"
-                  placeholder="misal: 10000000"
-                  value={targetAmount}
-                  onChange={e => setTargetAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs placeholder:text-slate-400 bg-white"
-                />
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs font-semibold">Rp</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="10.000.000"
+                    value={targetAmount}
+                    onChange={e => setTargetAmount(formatThousands(e.target.value))}
+                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-900 placeholder:text-slate-400 bg-white"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Tabungan Awal (Rp)</label>
-                <input
-                  type="number"
-                  placeholder="misal: 500000 (opsional)"
-                  value={currentAmount}
-                  onChange={e => setCurrentAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs placeholder:text-slate-400 bg-white"
-                />
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs font-semibold">Rp</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="500.000 (opsional)"
+                    value={currentAmount}
+                    onChange={e => setCurrentAmount(formatThousands(e.target.value))}
+                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-900 placeholder:text-slate-400 bg-white"
+                  />
+                </div>
               </div>
             </div>
             <div>
@@ -200,13 +223,17 @@ export default function GoalsSection({ goals, addGoal, contributeGoal, removeGoa
                   <div className="pt-2 border-t border-slate-50 flex items-center justify-between">
                     {contribGoalId === goal.id ? (
                       <div className="flex items-center gap-1.5 w-full animate-fade-in">
-                        <input
-                          type="number"
-                          placeholder="Jumlah dana (Rp)"
-                          value={contribAmount}
-                          onChange={e => setContribAmount(e.target.value)}
-                          className="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all text-xs bg-white text-slate-700"
-                        />
+                        <div className="relative flex-1">
+                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs font-semibold">Rp</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="500.000"
+                            value={contribAmount}
+                            onChange={e => setContribAmount(formatThousands(e.target.value))}
+                            className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all text-xs font-bold text-slate-900 bg-white placeholder:text-slate-400"
+                          />
+                        </div>
                         <button
                           onClick={() => handleContribution(goal.id)}
                           disabled={contribSubmitting}

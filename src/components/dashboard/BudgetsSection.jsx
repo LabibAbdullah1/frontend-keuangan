@@ -2,6 +2,19 @@ import React, { useState } from 'react';
 import { PieChart, Plus, Trash2, X, AlertTriangle } from 'lucide-react';
 import { formatRupiah } from '../../utils/format';
 
+// Format angka dengan titik pemisah ribuan saat mengetik
+const formatThousands = (val) => {
+  if (!val) return '';
+  const clean = val.replace(/\D/g, '');
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+// Konversi kembali ke angka murni sebelum dikirim ke API
+const parseRawNumber = (val) => {
+  if (!val) return 0;
+  return parseFloat(val.replace(/\./g, '')) || 0;
+};
+
 export default function BudgetsSection({ budgets, transactions, addBudget, removeBudget }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [category, setCategory] = useState('');
@@ -27,12 +40,13 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
     e.preventDefault();
     setFormError('');
     if (!category.trim()) return setFormError('Kategori harus diisi');
-    if (!amount || parseFloat(amount) <= 0) return setFormError('Batas anggaran harus lebih besar dari 0');
+    const rawAmount = parseRawNumber(amount);
+    if (!rawAmount || rawAmount <= 0) return setFormError('Batas anggaran harus lebih besar dari 0');
 
     setSubmitting(true);
     const res = await addBudget({
       category: category.trim(),
-      amount: parseFloat(amount),
+      amount: rawAmount,
       month: new Date().getMonth() + 1,
       year: new Date().getFullYear()
     });
@@ -95,13 +109,17 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Batas Nominal (Rp)</label>
-              <input
-                type="number"
-                placeholder="misal: 1500000"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs placeholder:text-slate-400 bg-white"
-              />
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs font-semibold">Rp</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="1.500.000"
+                  value={amount}
+                  onChange={e => setAmount(formatThousands(e.target.value))}
+                  className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-900 placeholder:text-slate-400 bg-white"
+                />
+              </div>
             </div>
           </div>
           <button
