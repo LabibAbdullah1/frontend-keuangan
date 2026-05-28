@@ -50,6 +50,14 @@ const initMockDB = () => {
     ];
     localStorage.setItem('fe_goals', JSON.stringify(defaultGoals));
   }
+
+  if (!localStorage.getItem('fe_recurring')) {
+    const defaultRecurring = [
+      { id: 1, type: 'expense', amount: 500000, category: 'Tagihan', frequency: 'monthly', note: 'Bayar Wifi Rumah Indihome', next_due_date: getToday(0), is_active: true, created_at: new Date().toISOString() },
+      { id: 2, type: 'income', amount: 8500000, category: 'Gaji', frequency: 'monthly', note: 'Gaji Bulanan Utama', next_due_date: getToday(5), is_active: true, created_at: new Date().toISOString() }
+    ];
+    localStorage.setItem('fe_recurring', JSON.stringify(defaultRecurring));
+  }
 };
 
 initMockDB();
@@ -62,6 +70,8 @@ const mockDB = {
   saveBudgets: (bds) => localStorage.setItem('fe_budgets', JSON.stringify(bds)),
   getGoals: () => JSON.parse(localStorage.getItem('fe_goals') || '[]'),
   saveGoals: (gls) => localStorage.setItem('fe_goals', JSON.stringify(gls)),
+  getRecurring: () => JSON.parse(localStorage.getItem('fe_recurring') || '[]'),
+  saveRecurring: (rcs) => localStorage.setItem('fe_recurring', JSON.stringify(rcs)),
 };
 
 // Detektor status API (digunakan untuk memicu banner mode demo di UI)
@@ -284,6 +294,108 @@ const handleMockRequest = (path, options = {}) => {
         return { success: true, message: 'Target tabungan berhasil dihapus' };
       }
     }
+  }
+
+  // 5. RUTE TRANSAKSI BERULANG (RECURRING)
+  if (path.startsWith('/recurring')) {
+    const recurring = mockDB.getRecurring();
+
+    if (method === 'GET') {
+      return { success: true, data: recurring };
+    }
+
+    if (method === 'POST') {
+      const newRec = {
+        id: Date.now(),
+        type: body.type,
+        amount: parseFloat(body.amount),
+        category: body.category,
+        frequency: body.frequency,
+        note: body.note || '',
+        next_due_date: body.next_due_date,
+        is_active: true,
+        created_at: new Date().toISOString()
+      };
+      recurring.push(newRec);
+      mockDB.saveRecurring(recurring);
+      return { success: true, message: 'Templat transaksi berulang berhasil didaftarkan.', data: newRec };
+    }
+
+    if (path.match(/\/recurring\/(\d+)\/toggle/)) {
+      const match = path.match(/\/recurring\/(\d+)\/toggle/);
+      const idToToggle = parseInt(match[1]);
+      const index = recurring.findIndex(r => r.id === idToToggle);
+      if (index !== -1) {
+        recurring[index].is_active = body.is_active;
+        mockDB.saveRecurring(recurring);
+        return { success: true, message: 'Status berhasil diubah.', data: recurring[index] };
+      }
+    }
+
+    if (method === 'DELETE') {
+      const match = path.match(/\/recurring\/(\d+)/);
+      if (match) {
+        const idToDelete = parseInt(match[1]);
+        const updated = recurring.filter(r => r.id !== idToDelete);
+        mockDB.saveRecurring(updated);
+        return { success: true, message: 'Templat berhasil dihapus' };
+      }
+    }
+  }
+
+  // 6. CRON PROCESS RECURRING
+  if (path.startsWith('/cron/process-recurring')) {
+    const recurring = mockDB.getRecurring();
+    const txs = mockDB.getTransactions();
+    const todayStr = getToday(0);
+    let processedCount = 0;
+
+    const updatedRecurring = recurring.map(rec => {
+      if (!rec.is_active) return rec;
+
+      let nextDue = new Date(rec.next_due_date);
+      const today = new Date(todayStr);
+
+      if (nextDue <= today) {
+        const newTx = {
+          id: Date.now() + processedCount,
+          type: rec.type,
+          amount: rec.amount,
+          category: rec.category,
+          date: rec.next_due_date,
+          note: `[Otomatis Berulang] ${rec.note || ''}`.trim()
+        };
+        txs.unshift(newTx);
+        processedCount++;
+
+        if (rec.frequency === 'daily') {
+          nextDue.setDate(nextDue.getDate() + 1);
+        } else if (rec.frequency === 'weekly') {
+          nextDue.setDate(nextDue.getDate() + 7);
+        } else if (rec.frequency === 'monthly') {
+          nextDue.setMonth(nextDue.getMonth() + 1);
+        } else if (rec.frequency === 'yearly') {
+          nextDue.setFullYear(nextDue.getFullYear() + 1);
+        }
+      }
+
+      const nextDueStr = `${nextDue.getFullYear()}-${String(nextDue.getMonth() + 1).padStart(2, '0')}-${String(nextDue.getDate()).padStart(2, '0')}`;
+      return {
+        ...rec,
+        next_due_date: nextDueStr
+      };
+    });
+
+    if (processedCount > 0) {
+      mockDB.saveRecurring(updatedRecurring);
+      mockDB.saveTransactions(txs);
+    }
+
+    return {
+      success: true,
+      processed_count: processedCount,
+      message: `${processedCount} transaksi berulang berhasil diproses secara lokal.`
+    };
   }
 
   // 4. RUTE ANALISIS & AGREGASI
@@ -531,5 +643,12 @@ export const api = {
       };
     }
     return res;
-  }
+  },
+
+  // Transaksi Berulang (Recurring)
+  getRecurringTemplates: () => request('/recurring'),
+  createRecurringTemplate: (data) => request('/recurring', { method: 'POST', body: JSON.stringify(data) }),
+  toggleRecurringTemplate: (id, is_active) => request(`/recurring/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ is_active }) }),
+  deleteRecurringTemplate: (id) => request(`/recurring/${id}`, { method: 'DELETE' }),
+  processRecurringTransactions: () => request('/cron/process-recurring', { method: 'POST' })
 };

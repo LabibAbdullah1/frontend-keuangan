@@ -5,6 +5,7 @@ export const useFinance = () => {
   const [transactions, setTransactions] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [goals, setGoals] = useState([]);
+  const [recurringTemplates, setRecurringTemplates] = useState([]);
   const [summary, setSummary] = useState({ total_income: 0, total_expense: 0, balance: 0 });
   const [categoryExpenses, setCategoryExpenses] = useState([]);
   const [cashflowTrend, setCashflowTrend] = useState([]);
@@ -34,6 +35,7 @@ export const useFinance = () => {
       setTransactions([]);
       setBudgets([]);
       setGoals([]);
+      setRecurringTemplates([]);
       setSummary({ total_income: 0, total_expense: 0, balance: 0 });
       setCategoryExpenses([]);
       setCashflowTrend([]);
@@ -56,7 +58,8 @@ export const useFinance = () => {
         summaryRes,
         categoryRes,
         trendRes,
-        healthRes
+        healthRes,
+        recurringRes
       ] = await Promise.all([
         api.getTransactions(),
         api.getBudgets(),
@@ -64,7 +67,8 @@ export const useFinance = () => {
         api.getSummary(),
         api.getCategoryExpenses(),
         api.getCashflowTrend(),
-        api.getFinancialHealth()
+        api.getFinancialHealth(),
+        api.getRecurringTemplates()
       ]);
 
       if (txRes.success) setTransactions(txRes.data);
@@ -74,6 +78,7 @@ export const useFinance = () => {
       if (categoryRes.success) setCategoryExpenses(categoryRes.data);
       if (trendRes.success) setCashflowTrend(trendRes.data);
       if (healthRes.success) setFinancialHealth(healthRes.data);
+      if (recurringRes.success) setRecurringTemplates(recurringRes.data);
 
       setIsDemo(checkDemoMode());
     } catch (err) {
@@ -219,6 +224,59 @@ export const useFinance = () => {
     }
   };
 
+  // Handler CRUD Transaksi Berulang (Recurring Templates)
+  const addRecurringTemplate = async (data) => {
+    try {
+      const res = await api.createRecurringTemplate(data);
+      if (res.success) {
+        await fetchAllData();
+        return { success: true, data: res.data };
+      }
+      return { success: false, message: 'Gagal membuat transaksi berulang' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const toggleRecurringActive = async (id, isActive) => {
+    try {
+      const res = await api.toggleRecurringTemplate(id, isActive);
+      if (res.success) {
+        await fetchAllData();
+        return { success: true, data: res.data };
+      }
+      return { success: false, message: 'Gagal mengubah status aktif' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const removeRecurringTemplate = async (id) => {
+    try {
+      const res = await api.deleteRecurringTemplate(id);
+      if (res.success) {
+        await fetchAllData();
+        return { success: true };
+      }
+      return { success: false, message: 'Gagal menghapus transaksi berulang' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const triggerProcessRecurring = async () => {
+    try {
+      const res = await api.processRecurringTransactions();
+      if (res.success) {
+        await fetchAllData();
+        return { success: true, message: res.message, processed_count: res.processed_count };
+      }
+      return { success: false, message: 'Gagal memproses transaksi berulang' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
   return {
     user,
     isAuthenticated,
@@ -228,6 +286,7 @@ export const useFinance = () => {
     transactions,
     budgets,
     goals,
+    recurringTemplates,
     summary,
     categoryExpenses,
     cashflowTrend,
@@ -242,6 +301,10 @@ export const useFinance = () => {
     removeBudget,
     addGoal,
     contributeGoal,
-    removeGoal
+    removeGoal,
+    addRecurringTemplate,
+    toggleRecurringActive,
+    removeRecurringTemplate,
+    triggerProcessRecurring
   };
 };

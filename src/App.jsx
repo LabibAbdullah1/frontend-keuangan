@@ -8,6 +8,7 @@ import BudgetsSection from './components/dashboard/BudgetsSection';
 import GoalsSection from './components/dashboard/GoalsSection';
 import TransactionList from './components/dashboard/TransactionList';
 import TransactionModal from './components/dashboard/TransactionModal';
+import RecurringSection from './components/dashboard/RecurringSection';
 import Auth from './components/auth/Auth';
 
 import { 
@@ -20,7 +21,8 @@ import {
   WifiOff,
   CloudLightning,
   Sparkles,
-  LogOut
+  LogOut,
+  RefreshCw
 } from 'lucide-react';
 import { formatRupiah } from './utils/format';
 
@@ -47,10 +49,16 @@ export default function App() {
     removeBudget,
     addGoal,
     contributeGoal,
-    removeGoal
+    removeGoal,
+    recurringTemplates,
+    addRecurringTemplate,
+    toggleRecurringActive,
+    removeRecurringTemplate,
+    triggerProcessRecurring
   } = useFinance();
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [transactionSubTab, setTransactionSubTab] = useState('history'); // 'history' or 'recurring'
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Dapatkan salam ramah dinamis berdasarkan waktu lokal saat ini
@@ -237,11 +245,51 @@ export default function App() {
           )}
 
           {activeTab === 'transactions' && (
-            <div className="animate-fade-in">
-              <TransactionList 
-                transactions={transactions} 
-                removeTransaction={removeTransaction} 
-              />
+            <div className="animate-fade-in space-y-6">
+              {/* SUB TAB SWITCHER */}
+              <div className="flex border-b border-slate-200">
+                <button
+                  onClick={() => setTransactionSubTab('history')}
+                  className={`px-5 py-3 text-xs font-bold transition-all border-b-2 focus:outline-none ${
+                    transactionSubTab === 'history'
+                      ? 'border-blue-600 text-blue-600 font-extrabold'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Riwayat Transaksi
+                </button>
+                <button
+                  onClick={() => setTransactionSubTab('recurring')}
+                  className={`px-5 py-3 text-xs font-bold transition-all border-b-2 focus:outline-none flex items-center gap-1.5 ${
+                    transactionSubTab === 'recurring'
+                      ? 'border-blue-600 text-blue-600 font-extrabold'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <RefreshCw size={13} className={transactionSubTab === 'recurring' ? 'animate-spin-slow' : ''} />
+                  Transaksi Berulang
+                </button>
+              </div>
+
+              {/* SUB TAB CONTENT */}
+              {transactionSubTab === 'history' ? (
+                <div className="animate-fade-in">
+                  <TransactionList 
+                    transactions={transactions} 
+                    removeTransaction={removeTransaction} 
+                  />
+                </div>
+              ) : (
+                <div className="animate-fade-in">
+                  <RecurringSection 
+                    recurringTemplates={recurringTemplates}
+                    addRecurringTemplate={addRecurringTemplate}
+                    toggleRecurringActive={toggleRecurringActive}
+                    removeRecurringTemplate={removeRecurringTemplate}
+                    triggerProcessRecurring={triggerProcessRecurring}
+                  />
+                </div>
+              )}
             </div>
           )}
 
