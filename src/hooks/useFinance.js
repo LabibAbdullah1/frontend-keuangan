@@ -30,7 +30,7 @@ export const useFinance = () => {
   }, []);
 
   // Fungsi untuk memuat seluruh data dari API secara paralel
-  const fetchAllData = useCallback(async () => {
+  const fetchAllData = useCallback(async (isSilent = false) => {
     if (!api.isAuthenticated()) {
       setTransactions([]);
       setBudgets([]);
@@ -44,7 +44,7 @@ export const useFinance = () => {
       return;
     }
 
-    setLoading(true);
+    if (!isSilent) setLoading(true);
     setError(null);
     try {
       // Pastikan access token valid di memori sebelum memanggil data secara paralel.
@@ -135,7 +135,7 @@ export const useFinance = () => {
     try {
       const res = await api.createTransaction(data);
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true, data: res.data };
       }
       return { success: false, message: 'Gagal membuat transaksi' };
@@ -148,7 +148,7 @@ export const useFinance = () => {
     try {
       const res = await api.deleteTransaction(id);
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true };
       }
       return { success: false, message: 'Gagal menghapus transaksi' };
@@ -162,7 +162,7 @@ export const useFinance = () => {
     try {
       const res = await api.createBudget(data);
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true, data: res.data };
       }
       return { success: false, message: 'Gagal membuat anggaran' };
@@ -175,7 +175,7 @@ export const useFinance = () => {
     try {
       const res = await api.deleteBudget(id);
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true };
       }
       return { success: false, message: 'Gagal menghapus anggaran' };
@@ -189,7 +189,7 @@ export const useFinance = () => {
     try {
       const res = await api.createGoal(data);
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true, data: res.data };
       }
       return { success: false, message: 'Gagal membuat target tabungan' };
@@ -202,7 +202,7 @@ export const useFinance = () => {
     try {
       const res = await api.contributeToGoal(id, amount);
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true, data: res.data };
       }
       return { success: false, message: 'Gagal menambahkan alokasi dana' };
@@ -215,7 +215,7 @@ export const useFinance = () => {
     try {
       const res = await api.deleteGoal(id);
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true };
       }
       return { success: false, message: 'Gagal menghapus target' };
@@ -229,7 +229,7 @@ export const useFinance = () => {
     try {
       const res = await api.createRecurringTemplate(data);
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true, data: res.data };
       }
       return { success: false, message: 'Gagal membuat transaksi berulang' };
@@ -242,7 +242,7 @@ export const useFinance = () => {
     try {
       const res = await api.toggleRecurringTemplate(id, isActive);
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true, data: res.data };
       }
       return { success: false, message: 'Gagal mengubah status aktif' };
@@ -255,7 +255,7 @@ export const useFinance = () => {
     try {
       const res = await api.deleteRecurringTemplate(id);
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true };
       }
       return { success: false, message: 'Gagal menghapus transaksi berulang' };
@@ -268,7 +268,7 @@ export const useFinance = () => {
     try {
       const res = await api.processRecurringTransactions();
       if (res.success) {
-        await fetchAllData();
+        await fetchAllData(true);
         return { success: true, message: res.message, processed_count: res.processed_count };
       }
       return { success: false, message: 'Gagal memproses transaksi berulang' };

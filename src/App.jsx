@@ -22,7 +22,8 @@ import {
   CloudLightning,
   Sparkles,
   LogOut,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import { formatRupiah } from './utils/format';
 
@@ -60,6 +61,59 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [transactionSubTab, setTransactionSubTab] = useState('history'); // 'history' or 'recurring'
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Global Delete Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+
+  const handleConfirmDelete = (title, message, onConfirm) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm: async () => {
+        await onConfirm();
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  // Interseptor aksi hapus untuk menampilkan modal konfirmasi
+  const handleRemoveTransaction = (id) => {
+    handleConfirmDelete(
+      'Hapus Catatan Transaksi',
+      'Apakah Anda yakin ingin menghapus catatan transaksi ini? Tindakan ini tidak dapat dibatalkan.',
+      () => removeTransaction(id)
+    );
+  };
+
+  const handleRemoveBudget = (id) => {
+    handleConfirmDelete(
+      'Hapus Batas Anggaran',
+      'Apakah Anda yakin ingin menghapus batas anggaran kategori ini? Tindakan ini tidak dapat dibatalkan.',
+      () => removeBudget(id)
+    );
+  };
+
+  const handleRemoveGoal = (id) => {
+    handleConfirmDelete(
+      'Hapus Target Tabungan',
+      'Apakah Anda yakin ingin menghapus target tabungan impian ini? Tindakan ini tidak dapat dibatalkan.',
+      () => removeGoal(id)
+    );
+  };
+
+  const handleRemoveRecurringTemplate = (id) => {
+    handleConfirmDelete(
+      'Hapus Transaksi Berulang',
+      'Apakah Anda yakin ingin menghapus template transaksi berulang ini? Tindakan ini tidak dapat dibatalkan.',
+      () => removeRecurringTemplate(id)
+    );
+  };
 
   // Dapatkan salam ramah dinamis berdasarkan waktu lokal saat ini
   const getGreeting = () => {
@@ -213,13 +267,13 @@ export default function App() {
                   budgets={budgets} 
                   transactions={transactions} 
                   addBudget={addBudget} 
-                  removeBudget={removeBudget} 
+                  removeBudget={handleRemoveBudget} 
                 />
                 <GoalsSection 
                   goals={goals} 
                   addGoal={addGoal} 
                   contributeGoal={contributeGoal} 
-                  removeGoal={removeGoal} 
+                  removeGoal={handleRemoveGoal} 
                 />
               </div>
 
@@ -237,7 +291,7 @@ export default function App() {
                 </div>
                 <TransactionList 
                   transactions={transactions.slice(0, 5)} 
-                  removeTransaction={removeTransaction} 
+                  removeTransaction={handleRemoveTransaction} 
                 />
               </div>
 
@@ -276,7 +330,7 @@ export default function App() {
                 <div className="animate-fade-in">
                   <TransactionList 
                     transactions={transactions} 
-                    removeTransaction={removeTransaction} 
+                    removeTransaction={handleRemoveTransaction} 
                   />
                 </div>
               ) : (
@@ -285,7 +339,7 @@ export default function App() {
                     recurringTemplates={recurringTemplates}
                     addRecurringTemplate={addRecurringTemplate}
                     toggleRecurringActive={toggleRecurringActive}
-                    removeRecurringTemplate={removeRecurringTemplate}
+                    removeRecurringTemplate={handleRemoveRecurringTemplate}
                     triggerProcessRecurring={triggerProcessRecurring}
                   />
                 </div>
@@ -299,7 +353,7 @@ export default function App() {
                 budgets={budgets} 
                 transactions={transactions} 
                 addBudget={addBudget} 
-                removeBudget={removeBudget} 
+                removeBudget={handleRemoveBudget} 
               />
             </div>
           )}
@@ -310,7 +364,7 @@ export default function App() {
                 goals={goals} 
                 addGoal={addGoal} 
                 contributeGoal={contributeGoal} 
-                removeGoal={removeGoal} 
+                removeGoal={handleRemoveGoal} 
               />
             </div>
           )}
@@ -328,6 +382,44 @@ export default function App() {
         onClose={() => setIsModalOpen(false)} 
         addTransaction={addTransaction} 
       />
+
+      {/* 8. GLOBAL DELETE CONFIRMATION MODAL */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[100] flex items-center justify-center p-4 select-none animate-fade-in">
+          <div className="bg-white border border-slate-100 shadow-2xl rounded-3xl p-6 max-w-sm w-full relative animate-fade-in">
+            {/* Header / Icon */}
+            <div className="flex items-center gap-3.5 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0 text-rose-600">
+                <AlertTriangle size={20} className="stroke-[2.5]" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 tracking-tight">{confirmModal.title}</h3>
+            </div>
+            
+            {/* Message */}
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed mb-6">
+              {confirmModal.message}
+            </p>
+            
+            {/* Buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                className="flex-1 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs shadow-sm transition-all border border-slate-200/60 text-center focus:outline-none"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmModal.onConfirm}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-md shadow-rose-500/10 hover:shadow-rose-500/25 transition-all text-center focus:outline-none animate-pulse-subtle"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
