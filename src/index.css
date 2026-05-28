@@ -2,32 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Premium styling additions */
+/* ─────────────────────────────────────────────────────────────────
+   GLOBAL FOCUS OUTLINE RESET
+   Menghapus outline hitam/biru default browser saat klik/tap
+   pada SEMUA elemen. Aksesibilitas keyboard tetap terjaga via
+   :focus-visible (hanya aktif saat navigasi dengan Tab key).
+────────────────────────────────────────────────────────────────── */
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-900;
-    /* Hapus highlight kotak biru saat tap di perangkat mobile (iOS/Android) */
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Hapus outline fokus default browser untuk semua elemen interaktif.
-     Fokus keyboard tetap aktif via :focus-visible untuk aksesibilitas. */
-  button,
-  a,
-  input,
-  select,
-  textarea,
-  [role="button"] {
-    outline: none;
+  /* Reset tap highlight di seluruh perangkat */
+  *,
+  *::before,
+  *::after {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
   }
 
-  /* Hapus outline/kotak hitam pada elemen SVG & recharts saat diklik */
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+
+  /* ── HAPUS SEMUA OUTLINE SAAT DIKLIK (universal) ── */
+  *:focus {
+    outline: none !important;
+    box-shadow: none;
+  }
+
+  /* ── KEMBALIKAN RING FOKUS HANYA UNTUK NAVIGASI KEYBOARD ──
+     :focus-visible hanya aktif saat pengguna menekan Tab,
+     TIDAK aktif saat klik mouse atau tap layar sentuh         */
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 2px;
+  }
+
+  /* Input & textarea tetap tampilkan ring saat diketik */
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none !important;
+  }
+
+  /* ── HAPUS OUTLINE / KOTAK HITAM PADA ELEMEN SVG & RECHARTS ── */
   svg,
   svg *,
   .recharts-wrapper,
   .recharts-surface,
+  .recharts-wrapper *,
   .recharts-pie,
   .recharts-pie-sector,
   .recharts-sector,
@@ -35,25 +57,17 @@
   .recharts-area,
   .recharts-curve {
     outline: none !important;
+    box-shadow: none !important;
     -webkit-tap-highlight-color: transparent !important;
-  }
-
-  /* Tampilkan ring fokus yang elegan HANYA saat navigasi keyboard (Tab key),
-     bukan saat klik/tap layar sentuh */
-  button:focus-visible,
-  a:focus-visible,
-  input:focus-visible,
-  select:focus-visible,
-  textarea:focus-visible {
-    @apply ring-2 ring-blue-500 ring-offset-1;
-    outline: none;
   }
 }
 
-/* Custom Scrollbar */
+/* ─────────────────────────────────────────────────────────────────
+   CUSTOM SCROLLBAR — Premium minimal
+────────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -62,22 +76,24 @@
 
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 4px;
+  border-radius: 99px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Micro-animations */
+/* ─────────────────────────────────────────────────────────────────
+   MICRO-ANIMATIONS
+────────────────────────────────────────────────────────────────── */
 .animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
