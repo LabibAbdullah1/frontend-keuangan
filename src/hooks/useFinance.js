@@ -45,6 +45,10 @@ export const useFinance = () => {
     setLoading(true);
     setError(null);
     try {
+      // Pastikan access token valid di memori sebelum memanggil data secara paralel.
+      // Ini mencegah log konsol dipenuhi pesan merah 401 karena request tanpa token sebelum silent refresh.
+      await api.ensureAccessToken();
+
       const [
         txRes,
         budgetRes,

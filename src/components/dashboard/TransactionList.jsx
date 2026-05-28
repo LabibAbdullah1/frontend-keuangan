@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Receipt, 
   Search, 
@@ -6,7 +6,9 @@ import {
   ArrowUpRight, 
   ArrowDownLeft, 
   Filter, 
-  SlidersHorizontal 
+  SlidersHorizontal,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { formatRupiah, formatDate } from '../../utils/format';
 
@@ -14,6 +16,23 @@ export default function TransactionList({ transactions, removeTransaction }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
+
+  // Custom Dropdown State & Ref
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Tutup custom dropdown ketika mengklik di luar elemen
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Ambil list unik kategori transaksi untuk opsi filter dropdown
   const uniqueCategories = [
@@ -33,7 +52,7 @@ export default function TransactionList({ transactions, removeTransaction }) {
   });
 
   return (
-    <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 group">
+    <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5 sm:p-6 group">
       {/* HEADER & PENCARIAN */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div className="space-y-1">
@@ -104,18 +123,62 @@ export default function TransactionList({ transactions, removeTransaction }) {
 
         <span className="text-slate-200">|</span>
 
-        {/* Dropdown Filter Kategori */}
-        <div className="relative">
-          <select
-            value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
-            className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 focus:outline-none focus:border-blue-500"
+        {/* Dropdown Filter Kategori (Custom Select) */}
+        <div className="relative" ref={dropdownRef}>
+          {/* Tombol Utama Dropdown */}
+          <button
+            type="button"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 focus:outline-none focus:border-blue-500 flex items-center gap-1.5 active:scale-[0.98] select-none"
           >
-            <option value="all">Semua Kategori</option>
-            {uniqueCategories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
+            <span>{filterCategory === 'all' ? 'Semua Kategori' : filterCategory}</span>
+            <ChevronDown 
+              size={13} 
+              className={`text-slate-400 transition-transform duration-200 ${
+                isDropdownOpen ? 'transform rotate-180 text-blue-500' : ''
+              }`} 
+            />
+          </button>
+
+          {/* List Pilihan Dropdown */}
+          {isDropdownOpen && (
+            <div className="absolute left-0 mt-1.5 z-30 bg-white border border-slate-100 shadow-xl rounded-lg py-1 text-xs select-none max-h-48 overflow-y-auto w-40 animate-fade-in">
+              <div
+                onClick={() => {
+                  setFilterCategory('all');
+                  setIsDropdownOpen(false);
+                }}
+                className={`px-3 py-1.5 font-medium cursor-pointer transition-all duration-150 flex items-center justify-between ${
+                  filterCategory === 'all' 
+                    ? 'bg-blue-50/70 text-blue-600 font-bold' 
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <span>Semua Kategori</span>
+                {filterCategory === 'all' && <Check size={12} className="text-blue-600 stroke-[2.5]" />}
+              </div>
+              {uniqueCategories.map((cat) => {
+                const isSelected = filterCategory === cat;
+                return (
+                  <div
+                    key={cat}
+                    onClick={() => {
+                      setFilterCategory(cat);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`px-3 py-1.5 font-medium cursor-pointer transition-all duration-150 flex items-center justify-between ${
+                      isSelected 
+                        ? 'bg-blue-50/70 text-blue-600 font-bold' 
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    {isSelected && <Check size={12} className="text-blue-600 stroke-[2.5]" />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -151,7 +214,7 @@ export default function TransactionList({ transactions, removeTransaction }) {
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
                         isIncome ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
                       }`}>
-                        {isIncome ? <ArrowUpRight size={12} /> : <ArrowDownLeft size={12} />}
+                        {isIncome ? <ArrowDownLeft size={12} /> : <ArrowUpRight size={12} />}
                         {isIncome ? 'Masuk' : 'Keluar'}
                       </span>
                     </td>
@@ -198,7 +261,7 @@ export default function TransactionList({ transactions, removeTransaction }) {
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${
                     isIncome ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'
                   }`}>
-                    {isIncome ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />}
+                    {isIncome ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">{tx.note || tx.category}</p>

@@ -1,20 +1,17 @@
-import React from 'react';
-import { 
-  LayoutDashboard, 
-  Receipt, 
-  PiggyBank, 
-  Target, 
-  ShieldAlert,
-  Wallet,
-  Settings,
-  LogOut
+import {
+  LayoutDashboard,
+  LogOut,
+  PieChart,
+  Receipt,
+  Target,
+  Wallet
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'transactions', label: 'Transaksi', icon: Receipt },
-    { id: 'budgets', label: 'Anggaran', icon: PiggyBank },
+    { id: 'budgets', label: 'Anggaran', icon: PieChart },
     { id: 'goals', label: 'Target Tabungan', icon: Target },
   ];
 
@@ -25,7 +22,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
   };
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-slate-100 h-screen sticky top-0 shrink-0 select-none z-30">
+    <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-slate-100 h-screen fixed top-0 left-0 bottom-0 shrink-0 select-none z-30">
       {/* BRANDING */}
       <div className="h-20 flex items-center px-6 border-b border-slate-50 gap-3">
         <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/10 transition-transform duration-300 hover:rotate-6">
@@ -47,16 +44,16 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
-                isActive 
-                  ? 'bg-blue-50/70 text-blue-600 font-semibold shadow-sm shadow-blue-500/5' 
+                isActive
+                  ? 'bg-blue-50/70 text-blue-600 font-semibold shadow-sm shadow-blue-500/5'
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              <Icon 
-                size={18} 
+              <Icon
+                size={18}
                 className={`transition-transform duration-300 group-hover:scale-110 ${
                   isActive ? 'text-blue-600 stroke-[2.2]' : 'text-slate-400 group-hover:text-slate-700'
-                }`} 
+                }`}
               />
               {item.label}
               {isActive && (
@@ -77,7 +74,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
             <p className="text-xs font-semibold text-slate-800 truncate capitalize">{user?.username || 'Guest'}</p>
             <p className="text-[10px] text-slate-400 font-medium truncate">{user?.email || 'Premium Member'}</p>
           </div>
-          <button 
+          <button
             onClick={onLogout}
             title="Keluar"
             className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-white transition-colors duration-200 focus:outline-none"

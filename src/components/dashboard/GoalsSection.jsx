@@ -55,7 +55,7 @@ export default function GoalsSection({ goals, addGoal, contributeGoal, removeGoa
   };
 
   return (
-    <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 group">
+    <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5 sm:p-6 group">
       <div className="flex items-center justify-between mb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">

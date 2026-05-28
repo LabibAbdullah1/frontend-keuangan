@@ -67,79 +67,83 @@ export const checkDemoMode = () => isDemoMode;
 
 // Fungsi pembantu fetch yang resilient
 const request = async (path, options = {}) => {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  // Sematkan JWT Access Token jika tersedia di memori
+  if (_accessToken) {
+    headers['Authorization'] = `Bearer ${_accessToken}`;
+  }
+
+  let response;
   try {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    // Sematkan JWT Access Token jika tersedia di memori
-    if (_accessToken) {
-      headers['Authorization'] = `Bearer ${_accessToken}`;
-    }
-
-    let response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       headers,
     });
+  } catch (networkError) {
+    // Hanya tangkap kesalahan koneksi jaringan (TypeError: Failed to fetch / server luring)
+    console.warn(`[API Connection Failed] Route: ${path}. Mengalihkan ke Resilient Demo Mode.`, networkError.message);
+    isDemoMode = true;
+    return handleMockRequest(path, options);
+  }
 
-    // ==============================================================
-    // INTERSEPTOR: AUTO REFRESH TOKEN (Saat Access Token Kadaluarsa / 401)
-    // ==============================================================
-    if (response.status === 401 && path !== '/auth/login' && path !== '/auth/register' && path !== '/auth/refresh') {
-      console.warn('[JWT Access Token Expired] Mencoba melakukan penyegaran token otomatis (silent refresh)...');
-      
-      if (_refreshToken) {
-        try {
-          const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken: _refreshToken })
-          });
+  // ==============================================================
+  // INTERSEPTOR: AUTO REFRESH TOKEN (Saat Access Token Kadaluarsa / 401)
+  // ==============================================================
+  if (response.status === 401 && path !== '/auth/login' && path !== '/auth/register' && path !== '/auth/refresh') {
+    console.warn('[JWT Access Token Expired] Mencoba melakukan penyegaran token otomatis (silent refresh)...');
+    
+    if (_refreshToken) {
+      try {
+        const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: _refreshToken })
+        });
 
-          if (refreshResponse.ok) {
-            const refreshData = await refreshResponse.json();
-            _accessToken = refreshData.accessToken;
-            console.log('[JWT Refresh Success] Access Token baru berhasil didapatkan secara senyap.');
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          _accessToken = refreshData.accessToken;
+          console.log('[JWT Refresh Success] Access Token baru berhasil didapatkan secara senyap.');
 
-            // Ulangi request asli dengan Access Token yang baru
-            headers['Authorization'] = `Bearer ${_accessToken}`;
+          // Ulangi request asli dengan Access Token yang baru
+          headers['Authorization'] = `Bearer ${_accessToken}`;
+          try {
             response = await fetch(`${API_BASE_URL}${path}`, {
               ...options,
               headers,
             });
-          } else {
-            console.error('[JWT Refresh Failed] Refresh Token tidak valid/kadaluarsa. Mengeluarkan user.');
-            api.logout();
-            throw new Error('Sesi Anda telah berakhir. Silakan masuk kembali.');
+          } catch (networkError) {
+            console.warn(`[API Connection Failed] Route: ${path} (setelah refresh). Mengalihkan ke Resilient Demo Mode.`, networkError.message);
+            isDemoMode = true;
+            return handleMockRequest(path, options);
           }
-        } catch (refreshErr) {
+        } else {
+          console.error('[JWT Refresh Failed] Refresh Token tidak valid/kadaluarsa. Mengeluarkan user.');
           api.logout();
-          throw refreshErr;
+          throw new Error('Sesi Anda telah berakhir. Silakan masuk kembali.');
         }
-      } else {
-        throw new Error('Koneksi terproteksi ditolak. Autentikasi tidak lengkap.');
+      } catch (refreshErr) {
+        api.logout();
+        throw refreshErr;
       }
+    } else {
+      throw new Error('Koneksi terproteksi ditolak. Autentikasi tidak lengkap.');
     }
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-
-    isDemoMode = false;
-    return await response.json();
-  } catch (error) {
-    // Jika kegagalan adalah masalah otentikasi (401), jangan lempar ke Demo Mode!
-    if (error.message.includes('Sesi Anda telah berakhir') || error.message.includes('autentikasi tidak lengkap') || error.message.includes('kredensial salah')) {
-      throw error;
-    }
-
-    // Jika koneksi server mati (TypeError: Failed to fetch), alihkan ke Demo Mode Offline
-    console.warn(`[API Connection Failed] Route: ${path}. Mengalihkan ke Resilient Demo Mode.`, error.message);
-    isDemoMode = true;
-    return handleMockRequest(path, options);
   }
+
+  // Jika response dari API tidak OK (misal: 400 Bad Request untuk validasi, 500 internal error)
+  // Lemparkan error agar ditangani oleh UI, BUKAN dialihkan ke Demo Mode.
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+  }
+
+  isDemoMode = false;
+  return await response.json();
 };
 
 // Menangani request dalam mode demo (Mock)
@@ -461,6 +465,36 @@ export const api = {
   getAccessToken: () => _accessToken,
   isAuthenticated: () => !!_refreshToken,
 
+  ensureAccessToken: async () => {
+    if (_accessToken) return _accessToken;
+    if (!_refreshToken) return null;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: _refreshToken })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        _accessToken = data.accessToken;
+        return _accessToken;
+      } else {
+        // Jika token gagal disegarkan (misal: refresh token kedaluwarsa), bersihkan sesi
+        _accessToken = null;
+        _refreshToken = null;
+        _user = null;
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        window.dispatchEvent(new Event('auth-change'));
+        return null;
+      }
+    } catch (err) {
+      return null;
+    }
+  },
+
   // Transaksi
   getTransactions: () => request('/transactions'),
   getTransaction: (id) => request(`/transactions/${id}`),
@@ -484,5 +518,15 @@ export const api = {
   getSummary: () => request('/analysis/summary'),
   getCategoryExpenses: () => request('/analysis/category'),
   getCashflowTrend: () => request('/analysis/cashflow-trend'),
-  getFinancialHealth: () => request('/analysis/health')
+  getFinancialHealth: async () => {
+    const res = await request('/analysis/health');
+    if (res.success && res.data && res.data.financial_health_score !== undefined) {
+      res.data = {
+        health_score: res.data.financial_health_score,
+        rating: res.data.grade,
+        recommendations: res.data.assessments || []
+      };
+    }
+    return res;
+  }
 };

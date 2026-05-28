@@ -6,6 +6,47 @@
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900;
+    /* Hapus highlight kotak biru saat tap di perangkat mobile (iOS/Android) */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Hapus outline fokus default browser untuk semua elemen interaktif.
+     Fokus keyboard tetap aktif via :focus-visible untuk aksesibilitas. */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"] {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  /* Hapus outline/kotak hitam pada elemen SVG & recharts saat diklik */
+  svg,
+  svg *,
+  .recharts-wrapper,
+  .recharts-surface,
+  .recharts-pie,
+  .recharts-pie-sector,
+  .recharts-sector,
+  .recharts-layer,
+  .recharts-area,
+  .recharts-curve {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  /* Tampilkan ring fokus yang elegan HANYA saat navigasi keyboard (Tab key),
+     bukan saat klik/tap layar sentuh */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply ring-2 ring-blue-500 ring-offset-1;
+    outline: none;
   }
 }
 

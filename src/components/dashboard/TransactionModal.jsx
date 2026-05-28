@@ -1,8 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { X, AlertTriangle, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, AlertTriangle, ArrowUpRight, ArrowDownLeft, ChevronDown, Check, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const INCOME_CATEGORIES = ['Gaji', 'Investasi', 'Freelance', 'Hadiah', 'Lain-lain'];
 const EXPENSE_CATEGORIES = ['Makanan', 'Transportasi', 'Hiburan', 'Tagihan', 'Kesehatan', 'Pendidikan', 'Belanja', 'Lain-lain'];
+
+// Helper untuk memformat angka dengan titik sebagai pemisah ribuan saat diketik
+const formatThousands = (val) => {
+  if (!val) return '';
+  const clean = val.replace(/\D/g, '');
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+const parseRawNumber = (formattedVal) => {
+  if (!formattedVal) return 0;
+  return parseFloat(formattedVal.replace(/\./g, '')) || 0;
+};
 
 export default function TransactionModal({ isOpen, onClose, addTransaction }) {
   const [type, setType] = useState('expense');
@@ -13,6 +25,15 @@ export default function TransactionModal({ isOpen, onClose, addTransaction }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Custom Dropdown State & Ref
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Custom Calendar State & Ref
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(new Date());
+  const calendarRef = useRef(null);
+
   // Set default tanggal hari ini saat modal dibuka
   useEffect(() => {
     if (isOpen) {
@@ -22,6 +43,9 @@ export default function TransactionModal({ isOpen, onClose, addTransaction }) {
       setCategory('');
       setNote('');
       setError('');
+      setIsDropdownOpen(false);
+      setIsCalendarOpen(false);
+      setViewDate(new Date());
     }
   }, [isOpen]);
 
@@ -30,13 +54,111 @@ export default function TransactionModal({ isOpen, onClose, addTransaction }) {
     setCategory(type === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0]);
   }, [type]);
 
+  // Kunci scroll halaman latar belakang ketika modal terbuka agar user lebih fokus
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  // Tutup custom dropdown ketika mengklik di luar elemen
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Tutup custom calendar ketika mengklik di luar elemen
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setIsCalendarOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Helper fungsi untuk Custom Calendar
+  const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+  const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay();
+
+  const formatFriendlyDate = (dateString) => {
+    if (!dateString) return 'Pilih Tanggal';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  };
+
+  const renderCalendarDays = () => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    
+    const daysInMonth = getDaysInMonth(year, month);
+    const firstDay = getFirstDayOfMonth(year, month);
+    
+    const days = [];
+    
+    // Kosongkan slot hari sebelum hari pertama bulan berjalan
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="w-8 h-8" />);
+    }
+    
+    // Slot tombol hari
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const isSelected = date === dayStr;
+      
+      const today = new Date();
+      const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+      
+      days.push(
+        <button
+          key={`day-${day}`}
+          type="button"
+          onClick={() => {
+            setDate(dayStr);
+            setIsCalendarOpen(false);
+          }}
+          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all relative ${
+            isSelected 
+              ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/25' 
+              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          {day}
+          {isToday && !isSelected && (
+            <span className="absolute bottom-1 w-1 h-1 bg-blue-600 rounded-full" />
+          )}
+        </button>
+      );
+    }
+    
+    return days;
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!amount || parseFloat(amount) <= 0) {
+    const rawAmount = parseRawNumber(amount);
+
+    if (!rawAmount || rawAmount <= 0) {
       return setError('Nominal transaksi wajib diisi dan harus lebih besar dari 0');
     }
     if (!category) {
@@ -49,7 +171,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction }) {
     setSubmitting(true);
     const res = await addTransaction({
       type,
-      amount: parseFloat(amount),
+      amount: rawAmount,
       category,
       date,
       note: note.trim() || null
@@ -103,7 +225,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction }) {
                     : 'text-slate-400 hover:text-slate-700'
                 }`}
               >
-                <ArrowDownLeft size={14} className={type === 'expense' ? 'stroke-[2.5]' : ''} />
+                <ArrowUpRight size={14} className={type === 'expense' ? 'stroke-[2.5]' : ''} />
                 Pengeluaran
               </button>
               <button
@@ -115,7 +237,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction }) {
                     : 'text-slate-400 hover:text-slate-700'
                 }`}
               >
-                <ArrowUpRight size={14} className={type === 'income' ? 'stroke-[2.5]' : ''} />
+                <ArrowDownLeft size={14} className={type === 'income' ? 'stroke-[2.5]' : ''} />
                 Pemasukan
               </button>
             </div>
@@ -129,39 +251,143 @@ export default function TransactionModal({ isOpen, onClose, addTransaction }) {
                 Rp
               </span>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="0"
                 value={amount}
-                onChange={e => setAmount(e.target.value)}
+                onChange={e => setAmount(formatThousands(e.target.value))}
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm font-bold text-slate-900 placeholder:text-slate-300 bg-slate-50/10"
               />
             </div>
           </div>
 
-          {/* KATEGORI DROPDOWN */}
-          <div>
+          {/* KATEGORI DROPDOWN (CUSTOM SELECT) */}
+          <div className="relative" ref={dropdownRef}>
             <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Kategori</label>
-            <select
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-semibold text-slate-700 bg-white"
+            
+            {/* Tombol Utama Dropdown */}
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-700 bg-white flex items-center justify-between active:scale-[0.99] select-none"
             >
-              {type === 'income' 
-                ? INCOME_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)
-                : EXPENSE_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)
-              }
-            </select>
+              <span>{category || 'Pilih Kategori'}</span>
+              <ChevronDown 
+                size={16} 
+                className={`text-slate-400 transition-transform duration-200 ${
+                  isDropdownOpen ? 'transform rotate-180 text-blue-500' : ''
+                }`} 
+              />
+            </button>
+
+            {/* List Pilihan Dropdown */}
+            {isDropdownOpen && (
+              <div className="absolute left-0 right-0 mt-1.5 z-30 bg-white border border-slate-100 shadow-xl rounded-xl py-1 text-xs select-none max-h-48 overflow-y-auto animate-fade-in">
+                {(type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((cat) => {
+                  const isSelected = category === cat;
+                  return (
+                    <div
+                      key={cat}
+                      onClick={() => {
+                        setCategory(cat);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`px-3.5 py-2 font-medium cursor-pointer transition-all duration-150 flex items-center justify-between ${
+                        isSelected 
+                          ? 'bg-blue-50/70 text-blue-600 font-bold' 
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <span>{cat}</span>
+                      {isSelected && <Check size={14} className="text-blue-600 stroke-[2.5]" />}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* TANGGAL */}
-          <div>
+          {/* TANGGAL (CUSTOM CALENDAR) */}
+          <div className="relative" ref={calendarRef}>
             <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Tanggal</label>
-            <input
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-semibold text-slate-700 bg-white"
-            />
+            
+            {/* Tombol Utama Trigger Calendar */}
+            <button
+              type="button"
+              onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-700 bg-white flex items-center justify-between active:scale-[0.99] select-none"
+            >
+              <span className="flex items-center gap-2">
+                <Calendar size={15} className="text-slate-400" />
+                {formatFriendlyDate(date)}
+              </span>
+              <ChevronDown 
+                size={16} 
+                className={`text-slate-400 transition-transform duration-200 ${
+                  isCalendarOpen ? 'transform rotate-180 text-blue-500' : ''
+                }`} 
+              />
+            </button>
+
+            {/* Panel Kalender Pickers (Center Sub-Modal Style) */}
+            {isCalendarOpen && (
+              <div className="fixed inset-0 bg-slate-900/25 backdrop-blur-[1.5px] z-50 flex items-center justify-center p-4 select-none animate-fade-in">
+                <div 
+                  className="bg-white border border-slate-100 shadow-2xl rounded-2xl p-5 w-72 relative animate-fade-in"
+                  onClick={e => e.stopPropagation()}
+                >
+                  {/* Header Bulan & Tahun */}
+                  <div className="flex items-center justify-between mb-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const prev = new Date(viewDate);
+                        prev.setMonth(prev.getMonth() - 1);
+                        setViewDate(prev);
+                      }}
+                      className="p-1.5 hover:bg-slate-50 text-slate-500 hover:text-slate-900 rounded-lg transition-all"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      {new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(viewDate)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = new Date(viewDate);
+                        next.setMonth(next.getMonth() + 1);
+                        setViewDate(next);
+                      }}
+                      className="p-1.5 hover:bg-slate-50 text-slate-500 hover:text-slate-900 rounded-lg transition-all"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+
+                  {/* Grid Nama Hari */}
+                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 select-none">
+                    {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
+                      <div key={d} className="h-6 flex items-center justify-center">{d}</div>
+                    ))}
+                  </div>
+
+                  {/* Grid Tanggal/Hari */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {renderCalendarDays()}
+                  </div>
+
+                  {/* Tombol Tutup Quick */}
+                  <button
+                    type="button"
+                    onClick={() => setIsCalendarOpen(false)}
+                    className="w-full mt-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs shadow-sm transition-all border border-slate-100 text-center"
+                  >
+                    Selesai
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* CATATAN */}

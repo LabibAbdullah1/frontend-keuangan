@@ -101,7 +101,8 @@ export default function App() {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} />
 
       {/* 2. MAIN APP CONTENT CONTAINER */}
-      <main className="flex-1 flex flex-col min-h-screen pb-28 lg:pb-8 overflow-y-auto px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+      <div className="flex-1 flex flex-col min-h-screen lg:pl-64">
+        <main className="flex-1 flex flex-col pb-28 lg:pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         
         {/* BANNER DEMO MODE RESILIEN (Muncul jika database/API luring) */}
         {isDemo && (
@@ -147,10 +148,10 @@ export default function App() {
               <span>{new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'short' }).format(new Date())}</span>
             </div>
 
-            {/* Catat Transaksi Button */}
+            {/* Catat Transaksi Button (Hanya tampil di Desktop) */}
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 px-4.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/25 transition-all duration-300 hover:scale-[1.02]"
+              className="hidden lg:flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/25 transition-all duration-300 hover:scale-[1.02]"
             >
               <Plus size={15} className="stroke-[2.5]" />
               Transaksi Baru
@@ -169,12 +170,12 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   <h4 className="text-xs font-bold text-slate-900">Skor Kesehatan Finansial:</h4>
                   <span className="text-[10px] font-bold bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">
-                    {financialHealth.health_score}/100 — {financialHealth.rating}
+                    {financialHealth?.health_score}/100 — {financialHealth?.rating}
                   </span>
                 </div>
-                {financialHealth.recommendations.length > 0 && (
+                {financialHealth?.recommendations?.length > 0 && (
                   <p className="text-[10px] text-slate-500 font-semibold line-clamp-1">
-                    👉 {financialHealth.recommendations[0]}
+                    👉 {financialHealth?.recommendations?.[0]}
                   </p>
                 )}
               </div>
@@ -196,7 +197,7 @@ export default function App() {
               <SummaryCards summary={summary} />
 
               {/* Charts Section */}
-              <ChartsSection cashflowTrend={cashflowTrend} categoryExpenses={categoryExpenses} />
+              <ChartsSection cashflowTrend={cashflowTrend} categoryExpenses={categoryExpenses} transactions={transactions} />
 
               {/* Grid 2 Column: Budgets & Goals */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -268,9 +269,10 @@ export default function App() {
         </div>
 
       </main>
+      </div>
 
       {/* 6. BOTTOM NAVIGATION (MOBILE) */}
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} onAddClick={() => setIsModalOpen(true)} />
 
       {/* 7. POPUP MODAL TRANSAKSI BARU */}
       <TransactionModal 

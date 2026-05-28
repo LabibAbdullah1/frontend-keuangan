@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PiggyBank, Plus, Trash2, X, AlertTriangle } from 'lucide-react';
+import { PieChart, Plus, Trash2, X, AlertTriangle } from 'lucide-react';
 import { formatRupiah } from '../../utils/format';
 
 export default function BudgetsSection({ budgets, transactions, addBudget, removeBudget }) {
@@ -48,12 +48,12 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
   };
 
   return (
-    <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 group">
+    <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5 sm:p-6 group">
       <div className="flex items-center justify-between mb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100/50">
-              <PiggyBank size={16} />
+              <PieChart size={16} />
             </div>
             <h3 className="text-sm font-bold text-slate-900">Batas Anggaran Bulanan</h3>
           </div>
@@ -180,7 +180,7 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
           })
         ) : (
           <div className="flex flex-col items-center justify-center text-slate-400 py-10 gap-2 border border-dashed border-slate-100 rounded-xl bg-slate-50/50">
-            <PiggyBank size={28} className="stroke-[1.5]" />
+            <PieChart size={28} className="stroke-[1.5]" />
             <p className="text-xs font-medium">Belum ada anggaran diatur bulan ini</p>
           </div>
         )}

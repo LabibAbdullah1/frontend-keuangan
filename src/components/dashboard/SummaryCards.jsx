@@ -16,7 +16,7 @@ export default function SummaryCards({ summary }) {
     {
       title: 'Total Pemasukan',
       amount: summary.total_income,
-      icon: ArrowUpRight,
+      icon: ArrowDownLeft,
       color: 'emerald',
       bgColor: 'bg-emerald-50/50 border-emerald-100/40',
       iconColor: 'text-emerald-600 bg-emerald-50 border-emerald-100',
@@ -25,7 +25,7 @@ export default function SummaryCards({ summary }) {
     {
       title: 'Total Pengeluaran',
       amount: summary.total_expense,
-      icon: ArrowDownLeft,
+      icon: ArrowUpRight,
       color: 'rose',
       bgColor: 'bg-rose-50/50 border-rose-100/40',
       iconColor: 'text-rose-600 bg-rose-50 border-rose-100',
@@ -40,7 +40,7 @@ export default function SummaryCards({ summary }) {
         return (
           <div
             key={card.title}
-            className={`bg-white border border-slate-100 shadow-sm rounded-2xl p-6 transition-all duration-300 hover:shadow-md hover:scale-[1.01] flex items-center justify-between relative overflow-hidden group`}
+            className={`bg-white border border-slate-100 shadow-sm rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:shadow-md hover:scale-[1.01] flex items-center justify-between relative overflow-hidden group`}
           >
             {/* Soft background shape */}
             <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full -z-0 opacity-10 transition-transform duration-500 group-hover:scale-125 ${
