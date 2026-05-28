@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { PieChart, Plus, Trash2, X, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { PieChart, Plus, Trash2, X, AlertTriangle, ChevronDown, Check } from 'lucide-react';
 import { formatRupiah } from '../../utils/format';
+
+const EXPENSE_CATEGORIES = ['Makanan', 'Transportasi', 'Hiburan', 'Tagihan', 'Kesehatan', 'Pendidikan', 'Belanja', 'Lain-lain'];
+
 
 // Format angka dengan titik pemisah ribuan saat mengetik
 const formatThousands = (val) => {
@@ -21,6 +24,32 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
   const [amount, setAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Tutup custom dropdown ketika mengklik di luar elemen
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleToggleAddForm = () => {
+    if (!showAddForm) {
+      setCategory(EXPENSE_CATEGORIES[0]);
+      setAmount('');
+      setFormError('');
+    }
+    setShowAddForm(!showAddForm);
+  };
+
 
   // Hitung total pengeluaran per kategori untuk bulan berjalan
   const getCategorySpending = (catName) => {
@@ -53,7 +82,7 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
 
     setSubmitting(false);
     if (res.success) {
-      setCategory('');
+      setCategory(EXPENSE_CATEGORIES[0]);
       setAmount('');
       setShowAddForm(false);
     } else {
@@ -74,7 +103,7 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
           <p className="text-xs text-slate-500">Kendalikan pengeluaran agar tetap hemat</p>
         </div>
         <button
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={handleToggleAddForm}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all duration-300 ${
             showAddForm 
               ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' 
@@ -88,7 +117,7 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
 
       {/* FORM TAMBAH ANGGARAN (INLINE ACCORDION) */}
       {showAddForm && (
-        <form onSubmit={handleFormSubmit} className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-100/80 space-y-3 animate-fade-in text-xs">
+        <form onSubmit={handleFormSubmit} className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-100/80 space-y-3 animate-fade-in text-xs relative z-50">
           <h4 className="font-bold text-slate-800">Atur Anggaran Baru</h4>
           {formError && (
             <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-100 text-rose-600 flex items-center gap-2">
@@ -97,15 +126,49 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Kategori Pengeluaran</label>
-              <input
-                type="text"
-                placeholder="misal: Makanan, Transportasi, Hiburan"
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs placeholder:text-slate-400 bg-white"
-              />
+            <div className="relative z-40" ref={dropdownRef}>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Kategori Pengeluaran</label>
+              
+              {/* Tombol Utama Dropdown */}
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-700 bg-white flex items-center justify-between active:scale-[0.99] select-none"
+              >
+                <span>{category || 'Pilih Kategori'}</span>
+                <ChevronDown 
+                  size={16} 
+                  className={`text-slate-400 transition-transform duration-200 ${
+                    isDropdownOpen ? 'transform rotate-180 text-blue-500' : ''
+                  }`} 
+                />
+              </button>
+
+              {/* List Pilihan Dropdown */}
+              {isDropdownOpen && (
+                <div className="absolute left-0 right-0 mt-1.5 z-50 bg-white border border-slate-100 shadow-xl rounded-xl py-1 text-xs select-none max-h-48 overflow-y-auto animate-fade-in">
+                  {EXPENSE_CATEGORIES.map((cat) => {
+                    const isSelected = category === cat;
+                    return (
+                      <div
+                        key={cat}
+                        onClick={() => {
+                          setCategory(cat);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`px-3.5 py-2 font-medium cursor-pointer transition-all duration-150 flex items-center justify-between ${
+                          isSelected 
+                            ? 'bg-blue-50/70 text-blue-600 font-bold' 
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                      >
+                        <span>{cat}</span>
+                        {isSelected && <Check size={14} className="text-blue-600 stroke-[2.5]" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Batas Nominal (Rp)</label>

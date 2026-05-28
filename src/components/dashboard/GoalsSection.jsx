@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Target, Plus, Trash2, X, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Target, Plus, Trash2, X, AlertTriangle, ArrowUpRight, Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatRupiah, formatDate } from '../../utils/format';
 
 // Format angka dengan titik pemisah ribuan saat mengetik
@@ -28,6 +28,99 @@ export default function GoalsSection({ goals, addGoal, contributeGoal, removeGoa
   const [contribGoalId, setContribGoalId] = useState(null);
   const [contribAmount, setContribAmount] = useState('');
   const [contribSubmitting, setContribSubmitting] = useState(false);
+
+  // Custom Calendar State & Ref
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(new Date());
+  const calendarRef = useRef(null);
+
+  // Tutup custom calendar ketika mengklik di luar elemen
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setIsCalendarOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Helper fungsi untuk Custom Calendar
+  const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+  const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay();
+
+  const formatFriendlyDate = (dateString) => {
+    if (!dateString) return 'Pilih Tanggal';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  };
+
+  const renderCalendarDays = () => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    
+    const daysInMonth = getDaysInMonth(year, month);
+    const firstDay = getFirstDayOfMonth(year, month);
+    
+    const days = [];
+    
+    // Kosongkan slot hari sebelum hari pertama bulan berjalan
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="w-8 h-8" />);
+    }
+    
+    // Slot tombol hari
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const isSelected = targetDate === dayStr;
+      
+      const today = new Date();
+      const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+      
+      days.push(
+        <button
+          key={`day-${day}`}
+          type="button"
+          onClick={() => {
+            setTargetDate(dayStr);
+            setIsCalendarOpen(false);
+          }}
+          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all relative ${
+            isSelected 
+              ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/25' 
+              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          {day}
+          {isToday && !isSelected && (
+            <span className="absolute bottom-1 w-1 h-1 bg-blue-600 rounded-full" />
+          )}
+        </button>
+      );
+    }
+    
+    return days;
+  };
+
+  const handleToggleAddForm = () => {
+    if (!showAddForm) {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      setTargetDate(`${year}-${month}-${day}`);
+      setViewDate(today);
+    } else {
+      setName('');
+      setTargetAmount('');
+      setCurrentAmount('');
+      setTargetDate('');
+    }
+    setShowAddForm(!showAddForm);
+  };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -82,7 +175,7 @@ export default function GoalsSection({ goals, addGoal, contributeGoal, removeGoa
           <p className="text-xs text-slate-500">Wujudkan resolusi finansial masa depan</p>
         </div>
         <button
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={handleToggleAddForm}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all duration-300 ${
             showAddForm 
               ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' 
@@ -145,14 +238,87 @@ export default function GoalsSection({ goals, addGoal, contributeGoal, removeGoa
                 </div>
               </div>
             </div>
-            <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Target Tanggal Wujud</label>
-              <input
-                type="date"
-                value={targetDate}
-                onChange={e => setTargetDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs bg-white text-slate-700"
-              />
+            {/* TANGGAL (CUSTOM CALENDAR) */}
+            <div className="relative" ref={calendarRef}>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Target Tanggal Wujud</label>
+              
+              {/* Tombol Utama Trigger Calendar */}
+              <button
+                type="button"
+                onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-700 bg-white flex items-center justify-between active:scale-[0.99] select-none"
+              >
+                <span className="flex items-center gap-2 font-semibold">
+                  <Calendar size={15} className="text-slate-400" />
+                  {formatFriendlyDate(targetDate)}
+                </span>
+                <ChevronDown 
+                  size={16} 
+                  className={`text-slate-400 transition-transform duration-200 ${
+                    isCalendarOpen ? 'transform rotate-180 text-blue-500' : ''
+                  }`} 
+                />
+              </button>
+
+              {/* Panel Kalender Pickers (Center Sub-Modal Style) */}
+              {isCalendarOpen && (
+                <div className="fixed inset-0 bg-slate-900/25 backdrop-blur-[1.5px] z-50 flex items-center justify-center p-4 select-none animate-fade-in">
+                  <div 
+                    className="bg-white border border-slate-100 shadow-2xl rounded-2xl p-5 w-72 relative animate-fade-in"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {/* Header Bulan & Tahun */}
+                    <div className="flex items-center justify-between mb-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prev = new Date(viewDate);
+                          prev.setMonth(prev.getMonth() - 1);
+                          setViewDate(prev);
+                        }}
+                        className="p-1.5 hover:bg-slate-50 text-slate-500 hover:text-slate-900 rounded-lg transition-all"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        {new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(viewDate)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = new Date(viewDate);
+                          next.setMonth(next.getMonth() + 1);
+                          setViewDate(next);
+                        }}
+                        className="p-1.5 hover:bg-slate-50 text-slate-500 hover:text-slate-900 rounded-lg transition-all"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+
+                    {/* Grid Nama Hari */}
+                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 select-none">
+                      {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
+                        <div key={d} className="h-6 flex items-center justify-center">{d}</div>
+                      ))}
+                    </div>
+
+                    {/* Grid Tanggal/Hari */}
+                    <div className="grid grid-cols-7 gap-1">
+                      {renderCalendarDays()}
+                    </div>
+
+                    {/* Tombol Tutup Quick */}
+                    <button
+                      type="button"
+                      onClick={() => setIsCalendarOpen(false)}
+                      className="w-full mt-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs shadow-sm transition-all border border-slate-100 text-center"
+                    >
+                      Selesai
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <button
