@@ -8,7 +8,7 @@ import {
   User
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
+export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashboardMode, changeDashboardMode, partnerInfo }) {
   const [profilePic, setProfilePic] = useState(localStorage.getItem(`user_avatar_${user?.id}`) || '');
 
   useEffect(() => {
@@ -50,8 +50,53 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
         </div>
       </div>
 
+      {/* COUPLE MODE SWITCH / LINK BUTTON */}
+      <div className="px-4 pt-4 select-none">
+        {partnerInfo ? (
+          <div className="p-3 rounded-2xl bg-gradient-to-tr from-blue-50/40 via-white to-pink-50/40 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1">
+                <span>Mode Pasangan</span>
+                <span className="animate-bounce-subtle text-xs">🧑‍🤝‍🧑</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => changeDashboardMode(dashboardMode === 'couple' ? 'personal' : 'couple')}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${
+                  dashboardMode === 'couple' ? 'bg-gradient-to-r from-blue-500 to-pink-500 ring-2 ring-pink-100 shadow-inner' : 'bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out ${
+                    dashboardMode === 'couple' ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            <p className="text-[9px] text-slate-400 font-bold mt-1.5 truncate flex items-center gap-1">
+              <span className={`w-1.5 h-1.5 rounded-full ${dashboardMode === 'couple' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+              {dashboardMode === 'couple' 
+                ? `Terhubung: ${partnerInfo.partner_username}` 
+                : 'Mode Mandiri'}
+            </p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setActiveTab('profile')}
+            className="w-full p-2.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-100/50 shadow-sm flex items-center justify-between text-left transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] group/couplebtn"
+          >
+            <div>
+              <p className="text-[9px] font-extrabold text-blue-600 uppercase tracking-widest leading-none">Kelola Berdua</p>
+              <p className="text-[10px] font-bold text-slate-600 mt-1 leading-none">Hubungkan Pasangan</p>
+            </div>
+            <span className="text-sm transition-transform duration-300 group-hover/couplebtn:scale-110">💖</span>
+          </button>
+        )}
+      </div>
+
       {/* NAVIGATION */}
-      <nav className="flex-1 py-6 px-4 space-y-1">
+      <nav className="flex-1 py-4 px-4 space-y-1">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;

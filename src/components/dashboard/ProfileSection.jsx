@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Lock, Eye, EyeOff, Check, AlertTriangle, ShieldCheck, UserCheck, Calendar, LogOut, Camera } from 'lucide-react';
 
-export default function ProfileSection({ user, updateUserProfile, isDemo, onLogout }) {
+export default function ProfileSection({ 
+  user, 
+  updateUserProfile, 
+  isDemo, 
+  onLogout,
+  dashboardMode,
+  changeDashboardMode,
+  partnerInfo,
+  incomingInvites,
+  sendCoupleInvite,
+  acceptCoupleInvite,
+  rejectCoupleInvite,
+  disconnectCouple
+}) {
   const [username, setUsername] = useState(user?.username || '');
   const [email, setEmail] = useState(user?.email || '');
   const [password, setPassword] = useState('');
@@ -22,6 +35,91 @@ export default function ProfileSection({ user, updateUserProfile, isDemo, onLogo
   // Avatar upload states
   const [avatarError, setAvatarError] = useState('');
   const [avatarSuccess, setAvatarSuccess] = useState('');
+
+  // State kemitraan (Couple Shared Dashboard)
+  const [partnerIdentifier, setPartnerIdentifier] = useState('');
+  const [inviteSubmitting, setInviteSubmitting] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [inviteSuccess, setInviteSuccess] = useState('');
+  
+  // Loading states per action
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  const handleInviteSubmit = async (e) => {
+    e.preventDefault();
+    setInviteError('');
+    setInviteSuccess('');
+    
+    if (!partnerIdentifier.trim()) {
+      setInviteError('Email atau username pasangan tidak boleh kosong.');
+      return;
+    }
+    
+    try {
+      setInviteSubmitting(true);
+      const res = await sendCoupleInvite(partnerIdentifier.trim());
+      if (res.success) {
+        setInviteSuccess(res.message || 'Undangan berhasil dikirim!');
+        setPartnerIdentifier('');
+      } else {
+        setInviteError(res.message || 'Gagal mengirimkan undangan.');
+      }
+    } catch (err) {
+      setInviteError(err.message || 'Terjadi kesalahan sistem.');
+    } finally {
+      setInviteSubmitting(false);
+    }
+  };
+
+  const handleAcceptInvite = async (inviteId) => {
+    try {
+      setActionLoadingId(inviteId);
+      const res = await acceptCoupleInvite(inviteId);
+      if (!res.success) {
+        setInviteError(res.message || 'Gagal menerima undangan.');
+      } else {
+        setInviteSuccess('Kemitraan berhasil diterima! Mode Pasangan aktif.');
+      }
+    } catch (err) {
+      setInviteError(err.message);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleRejectInvite = async (inviteId) => {
+    try {
+      setActionLoadingId(inviteId);
+      const res = await rejectCoupleInvite(inviteId);
+      if (!res.success) {
+        setInviteError(res.message || 'Gagal menolak undangan.');
+      } else {
+        setInviteSuccess('Undangan kemitraan ditolak.');
+      }
+    } catch (err) {
+      setInviteError(err.message);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (window.confirm('Apakah Anda yakin ingin memutuskan hubungan dengan pasangan Anda? Data Anda berdua akan dipisahkan kembali dan dashboard kembali ke mode mandiri.')) {
+      try {
+        setInviteSubmitting(true);
+        const res = await disconnectCouple();
+        if (!res.success) {
+          setInviteError(res.message || 'Gagal memutuskan hubungan.');
+        } else {
+          setInviteSuccess('Hubungan kemitraan berhasil diputuskan.');
+        }
+      } catch (err) {
+        setInviteError(err.message);
+      } finally {
+        setInviteSubmitting(false);
+      }
+    }
+  };
 
   // Sync avatar if user changes
   useEffect(() => {
@@ -261,6 +359,149 @@ export default function ProfileSection({ user, updateUserProfile, isDemo, onLogo
           </button>
 
         </div>
+
+        {/* 2. KARTU KELOLA BERSAMA PASANGAN (COUPLE SETTINGS) */}
+        <div className="bg-white border border-slate-100 shadow-sm rounded-3xl p-6 relative overflow-hidden group select-none">
+          {/* Gradients decorations */}
+          <div className="absolute -top-16 -left-16 w-32 h-32 rounded-full bg-pink-500/5 blur-2xl transition-transform duration-500 group-hover:scale-125" />
+          <div className="absolute -bottom-16 -right-16 w-32 h-32 rounded-full bg-blue-500/5 blur-2xl transition-transform duration-500 group-hover:scale-125" />
+          
+          <div className="flex items-center gap-2.5 mb-5 border-b border-slate-50 pb-4">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500 to-pink-500 text-white flex items-center justify-center shadow-md shadow-pink-500/10">
+              <span className="text-base">🧑‍🤝‍🧑</span>
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Kelola Bersama Pasangan</h3>
+              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Kelola pos keuangan berdua secara transparan</p>
+            </div>
+          </div>
+
+          {/* Feedback messages */}
+          {inviteError && (
+            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 text-[10px] font-bold mb-4 flex items-center gap-1.5 animate-slide-in">
+              <span>⚠️</span>
+              <span>{inviteError}</span>
+            </div>
+          )}
+
+          {inviteSuccess && (
+            <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-bold mb-4 flex items-center gap-1.5 animate-slide-in">
+              <span>💖</span>
+              <span>{inviteSuccess}</span>
+            </div>
+          )}
+
+          {partnerInfo ? (
+            /* CASE 1: SUDAH TERSAMBUNG */
+            <div className="space-y-4 animate-fade-in">
+              <div className="p-4 rounded-2xl bg-gradient-to-tr from-blue-50/30 to-pink-50/30 border border-pink-100/50 flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md shadow-slate-100 border border-pink-100 relative mb-3 select-none">
+                  <span className="text-xl animate-bounce-subtle">💑</span>
+                  <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-pink-500"></span>
+                  </span>
+                </div>
+                
+                <h4 className="text-xs font-extrabold text-slate-800">Hubungan Kemitraan Aktif</h4>
+                <p className="text-[11px] text-slate-505 font-bold mt-1.5 flex items-center justify-center gap-1">
+                  <span>Tersambung:</span>
+                  <span className="text-pink-600 font-black truncate">{partnerInfo.partner_username}</span>
+                </p>
+                <p className="text-[9px] text-slate-400 font-semibold mt-0.5 truncate max-w-full">
+                  ({partnerInfo.partner_email})
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-[10px] text-slate-505 font-semibold leading-relaxed">
+                🚀 **Dashboard Gabungan Siap**: Anda kini dapat mengaktifkan **Mode Pasangan 🧑‍🤝‍🧑** pada sidebar/header utama untuk menggabungkan data keuangan berdua secara real-time.
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDisconnect}
+                disabled={inviteSubmitting}
+                className="w-full py-2.5 bg-rose-50 hover:bg-rose-100/80 text-rose-600 border border-rose-100 rounded-xl font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                {inviteSubmitting ? 'Memproses...' : 'Putuskan Hubungan'}
+              </button>
+            </div>
+          ) : (
+            /* CASE 2: BELUM TERSAMBUNG */
+            <div className="space-y-5">
+              {/* Form Kirim Undangan */}
+              <form onSubmit={handleInviteSubmit} className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Kirim Undangan</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
+                      💌
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Username atau Email pasangan"
+                      value={partnerIdentifier}
+                      onChange={(e) => setPartnerIdentifier(e.target.value)}
+                      className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-100 transition-all text-xs font-bold text-slate-800 placeholder:text-slate-400 bg-white"
+                      disabled={inviteSubmitting}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={inviteSubmitting || !partnerIdentifier.trim()}
+                  className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-pink-500 hover:opacity-95 text-white rounded-xl text-xs font-bold shadow-md shadow-pink-500/10 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {inviteSubmitting ? 'Mengirim...' : 'Kirim Undangan Kemitraan'}
+                </button>
+              </form>
+
+              {/* Daftar Undangan Masuk */}
+              {incomingInvites && incomingInvites.length > 0 && (
+                <div className="space-y-2.5 pt-3 border-t border-slate-100/80">
+                  <span className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-2">
+                    Undangan Masuk ({incomingInvites.length})
+                  </span>
+                  
+                  {incomingInvites.map((invite) => (
+                    <div 
+                      key={invite.id} 
+                      className="p-3 rounded-2xl bg-gradient-to-r from-slate-50 to-pink-50/20 border border-slate-100 shadow-sm flex flex-col gap-2.5 animate-pulse-subtle"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-extrabold text-slate-800 truncate capitalize">{invite.requester_username}</p>
+                          <p className="text-[9px] text-slate-400 font-semibold truncate mt-0.5">{invite.requester_email}</p>
+                        </div>
+                        <span className="text-xs shrink-0 select-none animate-pulse">💖</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAcceptInvite(invite.id)}
+                          disabled={actionLoadingId !== null}
+                          className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] shadow-sm transition-all text-center focus:outline-none"
+                        >
+                          {actionLoadingId === invite.id ? 'Loading...' : 'Terima'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRejectInvite(invite.id)}
+                          disabled={actionLoadingId !== null}
+                          className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200/50 rounded-lg font-bold text-[10px] transition-all text-center focus:outline-none"
+                        >
+                          Tolak
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* 2. FORM EDIT DETAIL PROFIL & PASSWORD (KANAN - COL SPAN 2) */}

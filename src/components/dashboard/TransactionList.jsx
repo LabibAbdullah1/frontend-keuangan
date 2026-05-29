@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { formatRupiah, formatDate } from '../../utils/format';
 
-export default function TransactionList({ transactions, removeTransaction }) {
+export default function TransactionList({ transactions, removeTransaction, dashboardMode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -207,8 +207,15 @@ export default function TransactionList({ transactions, removeTransaction }) {
                         {tx.category}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-slate-500 max-w-[200px] truncate" title={tx.note}>
-                      {tx.note || '—'}
+                    <td className="py-3.5 px-4 max-w-[200px] truncate" title={tx.note}>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-slate-800 font-semibold">{tx.note || '—'}</span>
+                        {dashboardMode === 'couple' && tx.creator_name && (
+                          <span className="text-[9px] font-extrabold uppercase tracking-wider text-pink-500 bg-pink-50/60 px-1.5 py-0.5 rounded-md border border-pink-100/30 max-w-fit select-none">
+                            ✍️ {tx.creator_name}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
@@ -265,10 +272,18 @@ export default function TransactionList({ transactions, removeTransaction }) {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">{tx.note || tx.category}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-400 font-medium">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px] text-slate-400 font-medium">
                       <span>{tx.category}</span>
                       <span>•</span>
                       <span>{formatDate(tx.date)}</span>
+                      {dashboardMode === 'couple' && tx.creator_name && (
+                        <>
+                          <span>•</span>
+                          <span className="text-[9px] font-extrabold uppercase tracking-widest text-pink-600 bg-pink-50/80 px-1 py-0.2 rounded border border-pink-100/40">
+                            {tx.creator_name}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -15,6 +15,11 @@ export const useFinance = () => {
   const [error, setError] = useState(null);
   const [isDemo, setIsDemo] = useState(false);
 
+  // State Kelola Bersama Pasangan (Couple Shared Dashboard)
+  const [dashboardMode, setDashboardMode] = useState(localStorage.getItem('fe_dashboard_mode') || 'personal');
+  const [partnerInfo, setPartnerInfo] = useState(null);
+  const [incomingInvites, setIncomingInvites] = useState([]);
+
   // State Autentikasi
   const [user, setUser] = useState(api.getCurrentUser());
   const [isAuthenticated, setIsAuthenticated] = useState(api.isAuthenticated());
@@ -30,6 +35,7 @@ export const useFinance = () => {
   }, []);
 
   // Fungsi untuk memuat seluruh data dari API secara paralel
+  // Fungsi untuk memuat seluruh data dari API secara paralel
   const fetchAllData = useCallback(async (isSilent = false) => {
     if (!api.isAuthenticated()) {
       setTransactions([]);
@@ -40,6 +46,8 @@ export const useFinance = () => {
       setCategoryExpenses([]);
       setCashflowTrend([]);
       setFinancialHealth({ health_score: 100, rating: 'Silakan Login', recommendations: [] });
+      setPartnerInfo(null);
+      setIncomingInvites([]);
       setLoading(false);
       return;
     }
@@ -51,6 +59,8 @@ export const useFinance = () => {
       // Ini mencegah log konsol dipenuhi pesan merah 401 karena request tanpa token sebelum silent refresh.
       await api.ensureAccessToken();
 
+      const modeParam = dashboardMode;
+
       const [
         txRes,
         budgetRes,
@@ -59,16 +69,20 @@ export const useFinance = () => {
         categoryRes,
         trendRes,
         healthRes,
-        recurringRes
+        recurringRes,
+        partnerRes,
+        invitesRes
       ] = await Promise.all([
-        api.getTransactions(),
-        api.getBudgets(),
-        api.getGoals(),
-        api.getSummary(),
-        api.getCategoryExpenses(),
-        api.getCashflowTrend(),
-        api.getFinancialHealth(),
-        api.getRecurringTemplates()
+        api.getTransactions(modeParam),
+        api.getBudgets(modeParam),
+        api.getGoals(modeParam),
+        api.getSummary(modeParam),
+        api.getCategoryExpenses(modeParam),
+        api.getCashflowTrend(modeParam),
+        api.getFinancialHealth(modeParam),
+        api.getRecurringTemplates(modeParam),
+        api.getActivePartner(),
+        api.getInvites()
       ]);
 
       if (txRes.success) setTransactions(txRes.data);
@@ -79,12 +93,15 @@ export const useFinance = () => {
       if (trendRes.success) setCashflowTrend(trendRes.data);
       if (healthRes.success) setFinancialHealth(healthRes.data);
       if (recurringRes.success) setRecurringTemplates(recurringRes.data);
+      
+      if (partnerRes.success) setPartnerInfo(partnerRes.data);
+      if (invitesRes.success) setIncomingInvites(invitesRes.data);
 
       setIsDemo(checkDemoMode());
     } catch (err) {
       console.error('Error fetching finance data:', err);
       // Jika error adalah kadaluarsa otentikasi / sesi habis, hapus error di tingkat UI
-      if (err.message.includes('Sesi Anda telah berakhir') || err.message.includes('autentikasi tidak lengkap')) {
+      if (err.message && (err.message.includes('Sesi Anda telah berakhir') || err.message.includes('autentikasi tidak lengkap'))) {
         setError(null);
       } else {
         setError(err.message || 'Gagal memuat data finansial.');
@@ -92,12 +109,12 @@ export const useFinance = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dashboardMode]);
 
-  // Ambil data awal saat hook dipasang atau status auth berubah
+  // Ambil data awal saat hook dipasang atau status auth atau dashboardMode berubah
   useEffect(() => {
     fetchAllData();
-  }, [fetchAllData, isAuthenticated]);
+  }, [fetchAllData, isAuthenticated, dashboardMode]);
 
   // Handler Autentikasi
   const login = async (emailOrUsername, password) => {
@@ -305,6 +322,63 @@ export const useFinance = () => {
     }
   };
 
+  const changeDashboardMode = (mode) => {
+    localStorage.setItem('fe_dashboard_mode', mode);
+    setDashboardMode(mode);
+  };
+
+  const sendCoupleInvite = async (partnerIdentifier) => {
+    try {
+      const res = await api.invite(partnerIdentifier);
+      if (res.success) {
+        await fetchAllData(true);
+      }
+      return res;
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const acceptCoupleInvite = async (inviteId) => {
+    try {
+      const res = await api.acceptInvite(inviteId);
+      if (res.success) {
+        localStorage.setItem('fe_dashboard_mode', 'couple');
+        setDashboardMode('couple');
+        await fetchAllData(false);
+      }
+      return res;
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const rejectCoupleInvite = async (inviteId) => {
+    try {
+      const res = await api.rejectInvite(inviteId);
+      if (res.success) {
+        await fetchAllData(true);
+      }
+      return res;
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const disconnectCouple = async () => {
+    try {
+      const res = await api.disconnect();
+      if (res.success) {
+        localStorage.setItem('fe_dashboard_mode', 'personal');
+        setDashboardMode('personal');
+        await fetchAllData(false);
+      }
+      return res;
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
   return {
     user,
     isAuthenticated,
@@ -322,6 +396,14 @@ export const useFinance = () => {
     loading,
     error,
     isDemo,
+    dashboardMode,
+    changeDashboardMode,
+    partnerInfo,
+    incomingInvites,
+    sendCoupleInvite,
+    acceptCoupleInvite,
+    rejectCoupleInvite,
+    disconnectCouple,
     refreshData: fetchAllData,
     addTransaction,
     removeTransaction,

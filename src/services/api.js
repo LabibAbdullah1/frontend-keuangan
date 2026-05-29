@@ -9,17 +9,18 @@ let _refreshToken = localStorage.getItem('refreshToken');
 let _user = JSON.parse(localStorage.getItem('user') || 'null');
 let _accessToken = null; // Access token disimpan di memori demi keamanan (XSS protection)
 
+// Helper date untuk data mock luring di modul scope
+const getToday = (offsetDays = 0) => {
+  const d = new Date();
+  d.setDate(d.getDate() - offsetDays);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Database Mock lokal untuk menjaga fungsionalitas UI 100% luring (Offline/Demo Mode)
 const initMockDB = () => {
-  const getToday = (offsetDays = 0) => {
-    const d = new Date();
-    d.setDate(d.getDate() - offsetDays);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   if (!localStorage.getItem('fe_transactions')) {
     const defaultTransactions = [
       { id: 1, type: 'expense', amount: 150000, category: 'Makanan', date: getToday(0), note: 'Makan siang nasi padang bersama tim' },
@@ -58,6 +59,17 @@ const initMockDB = () => {
     ];
     localStorage.setItem('fe_recurring', JSON.stringify(defaultRecurring));
   }
+
+  if (localStorage.getItem('fe_partnership') === null) {
+    localStorage.setItem('fe_partnership', 'null');
+  }
+
+  if (!localStorage.getItem('fe_partnership_invites')) {
+    const defaultInvites = [
+      { id: 45, requester_id: 999, requester_username: 'Sayang 💖', requester_email: 'sayang@keuangan.com', created_at: new Date().toISOString() }
+    ];
+    localStorage.setItem('fe_partnership_invites', JSON.stringify(defaultInvites));
+  }
 };
 
 initMockDB();
@@ -72,6 +84,10 @@ const mockDB = {
   saveGoals: (gls) => localStorage.setItem('fe_goals', JSON.stringify(gls)),
   getRecurring: () => JSON.parse(localStorage.getItem('fe_recurring') || '[]'),
   saveRecurring: (rcs) => localStorage.setItem('fe_recurring', JSON.stringify(rcs)),
+  getPartnership: () => JSON.parse(localStorage.getItem('fe_partnership') || 'null'),
+  savePartnership: (p) => localStorage.setItem('fe_partnership', JSON.stringify(p)),
+  getPartnershipInvites: () => JSON.parse(localStorage.getItem('fe_partnership_invites') || '[]'),
+  savePartnershipInvites: (pIs) => localStorage.setItem('fe_partnership_invites', JSON.stringify(pIs)),
 };
 
 // Detektor status API (digunakan untuk memicu banner mode demo di UI)
@@ -164,30 +180,57 @@ const handleMockRequest = (path, options = {}) => {
   const method = options.method || 'GET';
   const body = options.body ? JSON.parse(options.body) : null;
 
+  const isCoupleMode = path.includes('mode=couple');
+  const activePartner = JSON.parse(localStorage.getItem('fe_partnership') || 'null');
+  const hasActivePartner = activePartner && activePartner.status === 'accepted';
+  const partnerName = hasActivePartner ? activePartner.partner_username : 'Pasangan';
+
+  // Helper to obtain transactions dynamically based on couple mode status
+  const getMockTxs = () => {
+    let txs = mockDB.getTransactions().map(t => ({
+      ...t,
+      creator_name: t.creator_name || _user?.username || 'Saya'
+    }));
+
+    if (isCoupleMode && hasActivePartner) {
+      const partnerTxs = [
+        { id: 'p1', type: 'expense', amount: 80000, category: 'Makanan', date: getToday(0), note: 'Beli kopi & croissant sore hari', creator_name: partnerName, created_at: new Date().toISOString() },
+        { id: 'p2', type: 'expense', amount: 250000, category: 'Hiburan', date: getToday(2), note: 'Nonton bioskop premiere berdua', creator_name: partnerName, created_at: new Date().toISOString() },
+        { id: 'p3', type: 'income', amount: 4500000, category: 'Gaji', date: getToday(1), note: 'Gaji Bulanan Pasangan', creator_name: partnerName, created_at: new Date().toISOString() }
+      ];
+      txs = [...txs, ...partnerTxs];
+      // Sort by date DESC, id DESC
+      txs.sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+    }
+    return txs;
+  };
+
   // 1. RUTE TRANSAKSI
   if (path.startsWith('/transactions')) {
-    const txs = mockDB.getTransactions();
+    let txs = getMockTxs();
 
     if (method === 'GET') {
       const match = path.match(/\/transactions\/(\d+)/);
       if (match) {
-        const tx = txs.find(t => t.id === parseInt(match[1]));
+        const tx = txs.find(t => t.id === parseInt(match[1]) || t.id === match[1]);
         return { success: true, data: tx || null };
       }
       return { success: true, data: txs };
     }
 
     if (method === 'POST') {
+      const originalTxs = mockDB.getTransactions();
       const newTx = {
         id: Date.now(),
         type: body.type,
         amount: parseFloat(body.amount),
         category: body.category,
         date: body.date,
-        note: body.note || ''
+        note: body.note || '',
+        creator_name: _user?.username || 'Saya'
       };
-      txs.unshift(newTx);
-      mockDB.saveTransactions(txs);
+      originalTxs.unshift(newTx);
+      mockDB.saveTransactions(originalTxs);
       return { success: true, data: newTx };
     }
 
@@ -195,7 +238,9 @@ const handleMockRequest = (path, options = {}) => {
       const match = path.match(/\/transactions\/(\d+)/);
       if (match) {
         const idToDelete = parseInt(match[1]);
-        const updated = txs.filter(t => t.id !== idToDelete);
+        // Cari dan hapus di database luring original (jika milik partner, biarkan untuk simulasi)
+        const originalTxs = mockDB.getTransactions();
+        const updated = originalTxs.filter(t => t.id !== idToDelete);
         mockDB.saveTransactions(updated);
         return { success: true, message: 'Transaksi berhasil dihapus' };
       }
@@ -204,13 +249,31 @@ const handleMockRequest = (path, options = {}) => {
 
   // 2. RUTE ANGGARAN (BUDGETS)
   if (path.startsWith('/budgets')) {
-    const budgets = mockDB.getBudgets();
+    let budgets = mockDB.getBudgets();
+
+    if (isCoupleMode && hasActivePartner) {
+      const partnerBudgets = [
+        { id: 'pb1', category: 'Makanan', amount: 1500000, month: new Date().getMonth() + 1, year: new Date().getFullYear() },
+        { id: 'pb2', category: 'Transportasi', amount: 500000, month: new Date().getMonth() + 1, year: new Date().getFullYear() }
+      ];
+      // Gabungkan berdasarkan kategori
+      const combined = {};
+      [...budgets, ...partnerBudgets].forEach(b => {
+        if (combined[b.category]) {
+          combined[b.category].amount += b.amount;
+        } else {
+          combined[b.category] = { ...b };
+        }
+      });
+      budgets = Object.values(combined);
+    }
 
     if (method === 'GET') {
       return { success: true, data: budgets };
     }
 
     if (method === 'POST') {
+      const originalBudgets = mockDB.getBudgets();
       const newBudget = {
         id: Date.now(),
         category: body.category,
@@ -218,8 +281,8 @@ const handleMockRequest = (path, options = {}) => {
         month: parseInt(body.month),
         year: parseInt(body.year)
       };
-      budgets.push(newBudget);
-      mockDB.saveBudgets(budgets);
+      originalBudgets.push(newBudget);
+      mockDB.saveBudgets(originalBudgets);
       return { success: true, data: newBudget };
     }
 
@@ -227,7 +290,8 @@ const handleMockRequest = (path, options = {}) => {
       const match = path.match(/\/budgets\/(\d+)/);
       if (match) {
         const idToDelete = parseInt(match[1]);
-        const updated = budgets.filter(b => b.id !== idToDelete);
+        const originalBudgets = mockDB.getBudgets();
+        const updated = originalBudgets.filter(b => b.id !== idToDelete);
         mockDB.saveBudgets(updated);
         return { success: true, message: 'Anggaran berhasil dihapus' };
       }
@@ -236,27 +300,40 @@ const handleMockRequest = (path, options = {}) => {
 
   // 3. RUTE TARGET TABUNGAN (GOALS)
   if (path.startsWith('/goals')) {
-    const goals = mockDB.getGoals();
+    let goals = mockDB.getGoals().map(g => ({
+      ...g,
+      creator_name: g.creator_name || _user?.username || 'Saya'
+    }));
+
+    if (isCoupleMode && hasActivePartner) {
+      const partnerGoals = [
+        { id: 'pg1', name: 'Tabungan Nikah 💍', target_amount: 50000000, current_amount: 15000000, target_date: '2027-06-30', creator_name: partnerName },
+        { id: 'pg2', name: 'Beli Motor Listrik ⚡', target_amount: 25000000, current_amount: 8000000, target_date: '2026-12-31', creator_name: partnerName }
+      ];
+      goals = [...goals, ...partnerGoals];
+    }
 
     if (method === 'GET') {
       const match = path.match(/\/goals\/(\d+)/);
       if (match) {
-        const goal = goals.find(g => g.id === parseInt(match[1]));
+        const goal = goals.find(g => g.id === parseInt(match[1]) || g.id === match[1]);
         return { success: true, data: goal || null };
       }
       return { success: true, data: goals };
     }
 
     if (method === 'POST') {
+      const originalGoals = mockDB.getGoals();
       const newGoal = {
         id: Date.now(),
         name: body.name,
         target_amount: parseFloat(body.target_amount),
         current_amount: parseFloat(body.current_amount || 0),
-        target_date: body.target_date
+        target_date: body.target_date,
+        creator_name: _user?.username || 'Saya'
       };
-      goals.push(newGoal);
-      mockDB.saveGoals(goals);
+      originalGoals.push(newGoal);
+      mockDB.saveGoals(originalGoals);
       return { success: true, data: newGoal };
     }
 
@@ -264,11 +341,12 @@ const handleMockRequest = (path, options = {}) => {
       const match = path.match(/\/goals\/(\d+)/);
       if (match) {
         const idToUpdate = parseInt(match[1]);
-        const index = goals.findIndex(g => g.id === idToUpdate);
+        const originalGoals = mockDB.getGoals();
+        const index = originalGoals.findIndex(g => g.id === idToUpdate);
         if (index !== -1) {
-          goals[index] = { ...goals[index], ...body };
-          mockDB.saveGoals(goals);
-          return { success: true, data: goals[index] };
+          originalGoals[index] = { ...originalGoals[index], ...body };
+          mockDB.saveGoals(originalGoals);
+          return { success: true, data: originalGoals[index] };
         }
       }
     }
@@ -277,11 +355,12 @@ const handleMockRequest = (path, options = {}) => {
     if (path.match(/\/goals\/(\d+)\/contribute/)) {
       const match = path.match(/\/goals\/(\d+)\/contribute/);
       const idToContribute = parseInt(match[1]);
-      const index = goals.findIndex(g => g.id === idToContribute);
+      const originalGoals = mockDB.getGoals();
+      const index = originalGoals.findIndex(g => g.id === idToContribute);
       if (index !== -1) {
-        goals[index].current_amount += parseFloat(body.amount);
-        mockDB.saveGoals(goals);
-        return { success: true, data: goals[index] };
+        originalGoals[index].current_amount += parseFloat(body.amount);
+        mockDB.saveGoals(originalGoals);
+        return { success: true, data: originalGoals[index] };
       }
     }
 
@@ -289,7 +368,8 @@ const handleMockRequest = (path, options = {}) => {
       const match = path.match(/\/goals\/(\d+)/);
       if (match) {
         const idToDelete = parseInt(match[1]);
-        const updated = goals.filter(g => g.id !== idToDelete);
+        const originalGoals = mockDB.getGoals();
+        const updated = originalGoals.filter(g => g.id !== idToDelete);
         mockDB.saveGoals(updated);
         return { success: true, message: 'Target tabungan berhasil dihapus' };
       }
@@ -298,13 +378,24 @@ const handleMockRequest = (path, options = {}) => {
 
   // 5. RUTE TRANSAKSI BERULANG (RECURRING)
   if (path.startsWith('/recurring')) {
-    const recurring = mockDB.getRecurring();
+    let recurring = mockDB.getRecurring().map(r => ({
+      ...r,
+      creator_name: r.creator_name || _user?.username || 'Saya'
+    }));
+
+    if (isCoupleMode && hasActivePartner) {
+      const partnerRecurring = [
+        { id: 'pr1', type: 'expense', amount: 150000, category: 'Hiburan', frequency: 'monthly', note: 'Netflix Premium Pasangan', next_due_date: getToday(0), is_active: true, created_at: new Date().toISOString(), creator_name: partnerName }
+      ];
+      recurring = [...recurring, ...partnerRecurring];
+    }
 
     if (method === 'GET') {
       return { success: true, data: recurring };
     }
 
     if (method === 'POST') {
+      const originalRecurring = mockDB.getRecurring();
       const newRec = {
         id: Date.now(),
         type: body.type,
@@ -314,21 +405,23 @@ const handleMockRequest = (path, options = {}) => {
         note: body.note || '',
         next_due_date: body.next_due_date,
         is_active: true,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        creator_name: _user?.username || 'Saya'
       };
-      recurring.push(newRec);
-      mockDB.saveRecurring(recurring);
+      originalRecurring.push(newRec);
+      mockDB.saveRecurring(originalRecurring);
       return { success: true, message: 'Templat transaksi berulang berhasil didaftarkan.', data: newRec };
     }
 
     if (path.match(/\/recurring\/(\d+)\/toggle/)) {
       const match = path.match(/\/recurring\/(\d+)\/toggle/);
       const idToToggle = parseInt(match[1]);
-      const index = recurring.findIndex(r => r.id === idToToggle);
+      const originalRecurring = mockDB.getRecurring();
+      const index = originalRecurring.findIndex(r => r.id === idToToggle);
       if (index !== -1) {
-        recurring[index].is_active = body.is_active;
-        mockDB.saveRecurring(recurring);
-        return { success: true, message: 'Status berhasil diubah.', data: recurring[index] };
+        originalRecurring[index].is_active = body.is_active;
+        mockDB.saveRecurring(originalRecurring);
+        return { success: true, message: 'Status berhasil diubah.', data: originalRecurring[index] };
       }
     }
 
@@ -336,7 +429,8 @@ const handleMockRequest = (path, options = {}) => {
       const match = path.match(/\/recurring\/(\d+)/);
       if (match) {
         const idToDelete = parseInt(match[1]);
-        const updated = recurring.filter(r => r.id !== idToDelete);
+        const originalRecurring = mockDB.getRecurring();
+        const updated = originalRecurring.filter(r => r.id !== idToDelete);
         mockDB.saveRecurring(updated);
         return { success: true, message: 'Templat berhasil dihapus' };
       }
@@ -363,7 +457,8 @@ const handleMockRequest = (path, options = {}) => {
           amount: rec.amount,
           category: rec.category,
           date: rec.next_due_date,
-          note: `[Otomatis Berulang] ${rec.note || ''}`.trim()
+          note: `[Otomatis Berulang] ${rec.note || ''}`.trim(),
+          creator_name: _user?.username || 'Saya'
         };
         txs.unshift(newTx);
         processedCount++;
@@ -400,7 +495,7 @@ const handleMockRequest = (path, options = {}) => {
 
   // 4. RUTE ANALISIS & AGREGASI
   if (path.startsWith('/analysis/summary')) {
-    const txs = mockDB.getTransactions();
+    const txs = getMockTxs();
     const income = txs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
     const expense = txs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
     return {
@@ -414,7 +509,7 @@ const handleMockRequest = (path, options = {}) => {
   }
 
   if (path.startsWith('/analysis/category')) {
-    const txs = mockDB.getTransactions();
+    const txs = getMockTxs();
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
@@ -435,8 +530,8 @@ const handleMockRequest = (path, options = {}) => {
   }
 
   if (path.startsWith('/analysis/cashflow-trend')) {
-    const txs = mockDB.getTransactions();
-    
+    const txs = getMockTxs();
+
     // Kelompokkan berdasarkan bulan
     const monthlyMap = {};
     txs.forEach(t => {
@@ -463,12 +558,12 @@ const handleMockRequest = (path, options = {}) => {
   }
 
   if (path.startsWith('/analysis/health')) {
-    const txs = mockDB.getTransactions();
+    const txs = getMockTxs();
     const income = txs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
     const expense = txs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    
+
     const savingRate = income > 0 ? ((income - expense) / income) * 100 : 0;
-    
+
     let score = 50;
     let rating = 'Cukup';
     let recommendations = [];
@@ -525,10 +620,10 @@ const handleMockRequest = (path, options = {}) => {
       };
       _user = updatedUser;
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      
+
       // Dispatch event agar App.jsx tahu ada perubahan
       window.dispatchEvent(new Event('auth-change'));
-      
+
       return {
         success: true,
         message: 'Profil Anda berhasil diperbarui (Mode Demo).',
@@ -538,6 +633,101 @@ const handleMockRequest = (path, options = {}) => {
           refreshToken: 'mock-refresh-token'
         }
       };
+    }
+  }
+
+  // 8. RUTE KEMITRAAN (PARTNERSHIPS)
+  if (path.startsWith('/partnership')) {
+    const partnership = mockDB.getPartnership();
+    const invites = mockDB.getPartnershipInvites();
+
+    if (path.startsWith('/partnership/active')) {
+      if (method === 'GET') {
+        return { success: true, data: partnership };
+      }
+    }
+
+    if (path.startsWith('/partnership/invites')) {
+      if (method === 'GET') {
+        return { success: true, data: invites };
+      }
+    }
+
+    if (path.startsWith('/partnership/invite')) {
+      if (method === 'POST') {
+        const { partnerIdentifier } = body;
+        if (!partnerIdentifier || !partnerIdentifier.trim()) {
+          return { success: false, message: 'Username atau Email pasangan tidak boleh kosong.' };
+        }
+
+        const ident = partnerIdentifier.trim().toLowerCase();
+        if (ident === _user?.username?.toLowerCase() || ident === _user?.email?.toLowerCase()) {
+          return { success: false, message: 'Anda tidak dapat mengirimkan undangan kemitraan kepada diri sendiri.' };
+        }
+
+        const inviteeName = partnerIdentifier.split('@')[0];
+
+        return {
+          success: true,
+          message: `Undangan kemitraan berhasil dikirim ke '${inviteeName}'.`,
+          data: { id: Date.now(), requester_id: _user.id, receiver_id: 888, status: 'pending' }
+        };
+      }
+    }
+
+    if (path.startsWith('/partnership/accept')) {
+      if (method === 'PUT') {
+        const match = path.match(/\/partnership\/accept\/(\d+)/);
+        const inviteId = match ? parseInt(match[1]) : null;
+
+        const updatedInvites = invites.filter(inv => inv.id !== inviteId);
+        mockDB.savePartnershipInvites(updatedInvites);
+
+        const newPartner = {
+          partnership_id: inviteId || Date.now(),
+          partner_id: 999,
+          partner_username: 'Sayang 💖',
+          partner_email: 'sayang@keuangan.com',
+          status: 'accepted'
+        };
+        mockDB.savePartnership(newPartner);
+
+        return {
+          success: true,
+          message: 'Selamat! Anda kini telah terhubung sebagai pasangan. Dashboard gabungan siap digunakan.'
+        };
+      }
+    }
+
+    if (path.startsWith('/partnership/reject')) {
+      if (method === 'PUT') {
+        const match = path.match(/\/partnership\/reject\/(\d+)/);
+        const inviteId = match ? parseInt(match[1]) : null;
+
+        const updatedInvites = invites.filter(inv => inv.id !== inviteId);
+        mockDB.savePartnershipInvites(updatedInvites);
+
+        return {
+          success: true,
+          message: 'Undangan kemitraan berhasil ditolak.'
+        };
+      }
+    }
+
+    if (path.startsWith('/partnership/disconnect')) {
+      if (method === 'DELETE') {
+        mockDB.savePartnership(null);
+        // Reset invites to default so user can test the accept flow again
+        const defaultInvites = [
+          { id: 45, requester_id: 999, requester_username: 'Sayang 💖', requester_email: 'sayang@keuangan.com', created_at: new Date().toISOString() }
+        ];
+        mockDB.savePartnershipInvites(defaultInvites);
+
+        return {
+          success: true,
+          message: 'Hubungan kemitraan berhasil diputuskan. Anda kembali ke mode mandiri.'
+        };
+      }
     }
   }
 
@@ -646,30 +836,30 @@ export const api = {
   },
 
   // Transaksi
-  getTransactions: () => request('/transactions'),
-  getTransaction: (id) => request(`/transactions/${id}`),
+  getTransactions: (mode) => request(`/transactions${mode ? `?mode=${mode}` : ''}`),
+  getTransaction: (id, mode) => request(`/transactions/${id}${mode ? `?mode=${mode}` : ''}`),
   createTransaction: (data) => request('/transactions', { method: 'POST', body: JSON.stringify(data) }),
-  deleteTransaction: (id) => request(`/transactions/${id}`, { method: 'DELETE' }),
+  deleteTransaction: (id, mode) => request(`/transactions/${id}${mode ? `?mode=${mode}` : ''}`, { method: 'DELETE' }),
 
   // Anggaran
-  getBudgets: () => request('/budgets'),
+  getBudgets: (mode) => request(`/budgets${mode ? `?mode=${mode}` : ''}`),
   createBudget: (data) => request('/budgets', { method: 'POST', body: JSON.stringify(data) }),
   deleteBudget: (id) => request(`/budgets/${id}`, { method: 'DELETE' }),
 
   // Goals
-  getGoals: () => request('/goals'),
-  getGoal: (id) => request(`/goals/${id}`),
+  getGoals: (mode) => request(`/goals${mode ? `?mode=${mode}` : ''}`),
+  getGoal: (id, mode) => request(`/goals/${id}${mode ? `?mode=${mode}` : ''}`),
   createGoal: (data) => request('/goals', { method: 'POST', body: JSON.stringify(data) }),
-  updateGoal: (id, data) => request(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  contributeToGoal: (id, amount) => request(`/goals/${id}/contribute`, { method: 'POST', body: JSON.stringify({ amount }) }),
-  deleteGoal: (id) => request(`/goals/${id}`, { method: 'DELETE' }),
+  updateGoal: (id, data, mode) => request(`/goals/${id}${mode ? `?mode=${mode}` : ''}`, { method: 'PUT', body: JSON.stringify(data) }),
+  contributeToGoal: (id, amount, mode) => request(`/goals/${id}/contribute${mode ? `?mode=${mode}` : ''}`, { method: 'POST', body: JSON.stringify({ amount }) }),
+  deleteGoal: (id, mode) => request(`/goals/${id}${mode ? `?mode=${mode}` : ''}`, { method: 'DELETE' }),
 
   // Analisis
-  getSummary: () => request('/analysis/summary'),
-  getCategoryExpenses: () => request('/analysis/category'),
-  getCashflowTrend: () => request('/analysis/cashflow-trend'),
-  getFinancialHealth: async () => {
-    const res = await request('/analysis/health');
+  getSummary: (mode) => request(`/analysis/summary${mode ? `?mode=${mode}` : ''}`),
+  getCategoryExpenses: (mode) => request(`/analysis/category${mode ? `?mode=${mode}` : ''}`),
+  getCashflowTrend: (mode) => request(`/analysis/cashflow-trend${mode ? `?mode=${mode}` : ''}`),
+  getFinancialHealth: async (mode) => {
+    const res = await request(`/analysis/health${mode ? `?mode=${mode}` : ''}`);
     if (res.success && res.data && res.data.financial_health_score !== undefined) {
       res.data = {
         health_score: res.data.financial_health_score,
@@ -681,7 +871,7 @@ export const api = {
   },
 
   // Transaksi Berulang (Recurring)
-  getRecurringTemplates: () => request('/recurring'),
+  getRecurringTemplates: (mode) => request(`/recurring${mode ? `?mode=${mode}` : ''}`),
   createRecurringTemplate: (data) => request('/recurring', { method: 'POST', body: JSON.stringify(data) }),
   toggleRecurringTemplate: (id, is_active) => request(`/recurring/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ is_active }) }),
   deleteRecurringTemplate: (id) => request(`/recurring/${id}`, { method: 'DELETE' }),
@@ -694,5 +884,17 @@ export const api = {
     }),
 
   // Profil User
-  updateProfile: (data) => request('/users/profile', { method: 'PUT', body: JSON.stringify(data) })
+  updateProfile: (data) => request('/users/profile', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Rute Kemitraan (Partnerships)
+  invite: (partnerIdentifier) => 
+    request('/partnership/invite', { 
+      method: 'POST', 
+      body: JSON.stringify({ partnerIdentifier }) 
+    }),
+  getInvites: () => request('/partnership/invites'),
+  acceptInvite: (id) => request(`/partnership/accept/${id}`, { method: 'PUT' }),
+  rejectInvite: (id) => request(`/partnership/reject/${id}`, { method: 'PUT' }),
+  getActivePartner: () => request('/partnership/active'),
+  disconnect: () => request('/partnership/disconnect', { method: 'DELETE' })
 };

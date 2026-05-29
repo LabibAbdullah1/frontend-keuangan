@@ -45,6 +45,14 @@ export default function App() {
     loading,
     error,
     isDemo,
+    dashboardMode,
+    changeDashboardMode,
+    partnerInfo,
+    incomingInvites,
+    sendCoupleInvite,
+    acceptCoupleInvite,
+    rejectCoupleInvite,
+    disconnectCouple,
     addTransaction,
     removeTransaction,
     addBudget,
@@ -176,7 +184,15 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 flex text-slate-900 overflow-x-hidden font-sans">
 
       {/* 1. SIDEBAR NAVIGATION (DESKTOP) */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        user={user}
+        onLogout={logout}
+        dashboardMode={dashboardMode}
+        changeDashboardMode={changeDashboardMode}
+        partnerInfo={partnerInfo}
+      />
 
       {/* 2. MAIN APP CONTENT CONTAINER */}
       <div className="flex-1 flex flex-col min-h-screen lg:pl-64">
@@ -203,7 +219,7 @@ export default function App() {
           <div className="space-y-1">
             <span className="text-[10px] font-bold text-blue-600 tracking-widest uppercase flex items-center gap-1.5">
               <Sparkles size={11} className="stroke-[2.5]" />
-              Personal Finance Hub
+              {dashboardMode === 'couple' ? 'Couple Finance Hub 🧑‍🤝‍🧑' : 'Personal Finance Hub'}
             </span>
             <h2 className="text-xl font-extrabold text-slate-950 tracking-tight capitalize flex items-center justify-between lg:block">
               <span className="flex flex-col md:flex-row md:items-center md:gap-1.5">
@@ -232,6 +248,20 @@ export default function App() {
           </div>
 
           <div className="flex items-center flex-wrap gap-3">
+            {/* Toggle Pasangan Seluler (Mobile/Tablet) */}
+            {partnerInfo && (
+              <button
+                type="button"
+                onClick={() => changeDashboardMode(dashboardMode === 'couple' ? 'personal' : 'couple')}
+                className="lg:hidden flex items-center gap-1.5 px-3 py-2 bg-gradient-to-tr from-blue-500 to-pink-500 text-white rounded-xl text-xs font-bold shadow-md shadow-pink-500/10 active:scale-95 transition-all"
+              >
+                <span>🧑‍🤝‍🧑</span>
+                <span className="hidden sm:inline">
+                  {dashboardMode === 'couple' ? 'Mode Pasangan' : 'Mode Mandiri'}
+                </span>
+              </button>
+            )}
+
             {/* Kalender widget */}
             <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-100 shadow-sm rounded-xl text-xs text-slate-500 font-semibold">
               <Calendar size={14} className="text-slate-400" />
@@ -341,6 +371,7 @@ export default function App() {
                 <TransactionList
                   transactions={transactions.slice(0, 5)}
                   removeTransaction={handleRemoveTransaction}
+                  dashboardMode={dashboardMode}
                 />
               </div>
 
@@ -380,6 +411,7 @@ export default function App() {
                   <TransactionList
                     transactions={transactions}
                     removeTransaction={handleRemoveTransaction}
+                    dashboardMode={dashboardMode}
                   />
                 </div>
               ) : (
@@ -425,6 +457,14 @@ export default function App() {
                 updateUserProfile={updateUserProfile}
                 isDemo={isDemo}
                 onLogout={logout}
+                dashboardMode={dashboardMode}
+                changeDashboardMode={changeDashboardMode}
+                partnerInfo={partnerInfo}
+                incomingInvites={incomingInvites}
+                sendCoupleInvite={sendCoupleInvite}
+                acceptCoupleInvite={acceptCoupleInvite}
+                rejectCoupleInvite={rejectCoupleInvite}
+                disconnectCouple={disconnectCouple}
               />
             </div>
           )}
