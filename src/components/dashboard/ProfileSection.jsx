@@ -19,6 +19,10 @@ export default function ProfileSection({ user, updateUserProfile, isDemo, onLogo
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Avatar upload states
+  const [avatarError, setAvatarError] = useState('');
+  const [avatarSuccess, setAvatarSuccess] = useState('');
+
   // Sync avatar if user changes
   useEffect(() => {
     setProfilePic(localStorage.getItem(`user_avatar_${user?.id}`) || '');
@@ -33,8 +37,11 @@ export default function ProfileSection({ user, updateUserProfile, isDemo, onLogo
     const file = e.target.files[0];
     if (!file) return;
 
+    setAvatarError('');
+    setAvatarSuccess('');
+
     if (file.size > 2 * 1024 * 1024) {
-      setErrorMsg('Ukuran file terlalu besar. Maksimal 2MB.');
+      setAvatarError('Ukuran file terlalu besar. Maksimal 2MB.');
       return;
     }
 
@@ -72,7 +79,7 @@ export default function ProfileSection({ user, updateUserProfile, isDemo, onLogo
 
         // Dispatch global event so sidebar and mobile header update instantly
         window.dispatchEvent(new Event('auth-change'));
-        setSuccessMsg('Foto profil Anda berhasil diperbarui!');
+        setAvatarSuccess('Foto profil Anda berhasil diperbarui!');
       };
       img.src = event.target.result;
     };
@@ -82,8 +89,9 @@ export default function ProfileSection({ user, updateUserProfile, isDemo, onLogo
   const handleDeletePhoto = () => {
     localStorage.removeItem(`user_avatar_${user?.id}`);
     setProfilePic('');
+    setAvatarError('');
+    setAvatarSuccess('Foto profil berhasil dihapus.');
     window.dispatchEvent(new Event('auth-change'));
-    setSuccessMsg('Foto profil berhasil dihapus.');
   };
 
   const handleFormSubmit = async (e) => {
@@ -192,6 +200,20 @@ export default function ProfileSection({ user, updateUserProfile, isDemo, onLogo
             >
               Hapus Foto
             </button>
+          )}
+
+          {/* Avatar Upload Feedback Messages */}
+          {avatarError && (
+            <div className="mt-3.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-100/50 text-rose-600 text-[10px] font-bold flex items-center gap-1.5 shadow-sm animate-fade-in">
+              <span>⚠️</span>
+              <span>{avatarError}</span>
+            </div>
+          )}
+          {avatarSuccess && (
+            <div className="mt-3.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-100/50 text-emerald-600 text-[10px] font-bold flex items-center gap-1.5 shadow-sm animate-fade-in">
+              <span>✅</span>
+              <span>{avatarSuccess}</span>
+            </div>
           )}
 
           <div className="mt-5 space-y-1 w-full px-2">

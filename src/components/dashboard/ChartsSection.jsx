@@ -67,6 +67,7 @@ const formatYAxis = (val) => {
 
 export default function ChartsSection({ cashflowTrend, categoryExpenses, transactions = [] }) {
   const [viewType, setViewType] = useState('daily'); // Default langsung menampilkan Harian (Bulan Ini) untuk visualisasi harian
+  const [activeCategory, setActiveCategory] = useState(null);
 
   // Format data cashflow bulanan untuk grafik
   const formattedCashflow = cashflowTrend.map(item => {
@@ -268,7 +269,11 @@ export default function ChartsSection({ cashflowTrend, categoryExpenses, transac
           <p className="text-xs text-slate-500">Distribusi pengeluaran per kategori</p>
         </div>
 
-        <div className="relative flex items-center justify-center h-48" style={{ outline: 'none' }}>
+        <div 
+          className="relative flex items-center justify-center h-48" 
+          style={{ outline: 'none' }}
+          onClick={() => setActiveCategory(null)}
+        >
           {categoryExpenses.length > 0 ? (
             <>
               <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
@@ -284,6 +289,12 @@ export default function ChartsSection({ cashflowTrend, categoryExpenses, transac
                     nameKey="category"
                     style={{ outline: 'none' }}
                     isAnimationActive={true}
+                    onMouseEnter={(data) => setActiveCategory(data)}
+                    onMouseLeave={() => setActiveCategory(null)}
+                    onClick={(data, index, e) => {
+                      if (e) e.stopPropagation();
+                      setActiveCategory(data);
+                    }}
                   >
                     {categoryExpenses.map((entry, index) => (
                       <Cell 
@@ -293,7 +304,6 @@ export default function ChartsSection({ cashflowTrend, categoryExpenses, transac
                       />
                     ))}
                   </Pie>
-                  <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
               {/* Tengah Donut (Total Pengeluaran) */}
@@ -301,6 +311,17 @@ export default function ChartsSection({ cashflowTrend, categoryExpenses, transac
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total</span>
                 <span className="text-sm font-bold text-slate-900">{formatRupiah(totalExpense)}</span>
               </div>
+
+              {/* Custom Absolute Tooltip premium di luar lingkaran */}
+              {activeCategory && (
+                <div className="absolute top-0 right-0 bg-white/95 backdrop-blur-sm border border-slate-100/80 shadow-md rounded-2xl p-3 select-none animate-fade-in text-xs z-10 pointer-events-none min-w-[130px] border-l-4" style={{ borderLeftColor: getCategoryColor(activeCategory.category) }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="font-bold text-slate-800">{activeCategory.category}</span>
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Jumlah</div>
+                  <div className="font-extrabold text-slate-900 text-sm">{formatRupiah(activeCategory.total_amount || activeCategory.value)}</div>
+                </div>
+              )}
             </>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2 border border-dashed border-slate-100 rounded-xl bg-slate-50/50">
@@ -317,7 +338,16 @@ export default function ChartsSection({ cashflowTrend, categoryExpenses, transac
               const color = getCategoryColor(entry.category, index);
               const percentage = totalExpense > 0 ? ((entry.total_amount / totalExpense) * 100).toFixed(0) : 0;
               return (
-                <div key={entry.category} className="flex items-center justify-between text-xs py-0.5">
+                <div 
+                  key={entry.category} 
+                  className="flex items-center justify-between text-xs py-1 px-2 rounded-xl transition-all duration-200 cursor-pointer hover:bg-slate-50 active:bg-slate-100"
+                  onMouseEnter={() => setActiveCategory(entry)}
+                  onMouseLeave={() => setActiveCategory(null)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveCategory(entry);
+                  }}
+                >
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                     <span className="font-semibold text-slate-700 truncate max-w-[100px]">{entry.category}</span>

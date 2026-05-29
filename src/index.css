@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scrollbar-gutter: stable;
+}
+
 /* ─────────────────────────────────────────────────────────────────
    GLOBAL FOCUS OUTLINE RESET
    Menghapus outline hitam/biru default browser saat klik/tap

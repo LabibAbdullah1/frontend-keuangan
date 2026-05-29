@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
-  LogOut,
   PieChart,
   Receipt,
   Target,
@@ -102,13 +101,6 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
               <p className="text-[10px] text-slate-400 font-medium truncate">{user?.email || 'Premium Member'}</p>
             </div>
           </div>
-          <button
-            onClick={onLogout}
-            title="Keluar"
-            className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-white transition-colors duration-200 focus:outline-none shrink-0"
-          >
-            <LogOut size={15} />
-          </button>
         </div>
       </div>
     </aside>

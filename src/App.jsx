@@ -12,12 +12,12 @@ import RecurringSection from './components/dashboard/RecurringSection';
 import ProfileSection from './components/dashboard/ProfileSection';
 import Auth from './components/auth/Auth';
 
-import { 
-  Plus, 
-  Calendar, 
-  Heart, 
-  Info, 
-  ChevronRight, 
+import {
+  Plus,
+  Calendar,
+  Heart,
+  Info,
+  ChevronRight,
   Wallet,
   WifiOff,
   CloudLightning,
@@ -174,14 +174,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex text-slate-900 overflow-x-hidden font-sans">
-      
+
       {/* 1. SIDEBAR NAVIGATION (DESKTOP) */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} />
 
       {/* 2. MAIN APP CONTENT CONTAINER */}
       <div className="flex-1 flex flex-col min-h-screen lg:pl-64">
         <main className="flex-1 flex flex-col pb-28 lg:pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        
+
         {/* BANNER DEMO MODE RESILIEN (Muncul jika database/API luring) */}
         {isDemo && (
           <div className="mt-4 p-3 rounded-2xl bg-amber-50 border border-amber-200/60 text-amber-800 text-xs flex items-center justify-between gap-3 shadow-sm shadow-amber-500/5 animate-fade-in select-none">
@@ -206,14 +206,17 @@ export default function App() {
               Personal Finance Hub
             </span>
             <h2 className="text-xl font-extrabold text-slate-950 tracking-tight capitalize flex items-center justify-between lg:block">
-              <span>{getGreeting()}, {user?.username || 'User'}!</span>
+              <span className="flex flex-col md:flex-row md:items-center md:gap-1.5">
+                <span>{getGreeting()},</span>
+                <span>{user?.username || 'User'}!</span>
+              </span>
               {/* Tombol Profil Khusus Seluler (Mobile < 768px) di Header */}
               <div className="md:hidden flex items-center">
                 <button
                   onClick={() => setActiveTab('profile')}
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold font-mono transition-all relative overflow-hidden bg-slate-100 ${
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold font-mono transition-all relative overflow-hidden bg-slate-100 mr-6 ${
                     activeTab === 'profile'
-                      ? 'bg-gradient-to-tr from-blue-600 to-indigo-600 ring-2 ring-blue-500 ring-offset-2 scale-95 shadow-inner'
+                      ? 'bg-gradient-to-tr from-blue-600 to-indigo-600 ring-2 ring-blue-500 shadow-md'
                       : 'bg-gradient-to-tr from-blue-500 to-sky-400 hover:opacity-90 shadow-md'
                   }`}
                 >
@@ -221,9 +224,6 @@ export default function App() {
                     <img src={profilePic} alt="User Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <span>{user?.username?.slice(0, 2).toUpperCase() || 'U'}</span>
-                  )}
-                  {activeTab === 'profile' && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-blue-600 border border-white z-10" />
                   )}
                 </button>
               </div>
@@ -244,7 +244,7 @@ export default function App() {
                 onClick={() => setActiveTab('profile')}
                 className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold font-mono transition-all relative overflow-hidden bg-slate-100 ${
                   activeTab === 'profile'
-                    ? 'bg-gradient-to-tr from-blue-600 to-indigo-600 ring-2 ring-blue-500 ring-offset-2 scale-95 shadow-inner'
+                    ? 'bg-gradient-to-tr from-blue-600 to-indigo-600 ring-2 ring-blue-500 shadow-md'
                     : 'bg-gradient-to-tr from-blue-500 to-sky-400 hover:opacity-90 shadow-md'
                 }`}
               >
@@ -303,7 +303,7 @@ export default function App() {
         <div className="mt-6 flex-1">
           {activeTab === 'dashboard' && (
             <div className="space-y-6 animate-fade-in">
-              
+
               {/* 3 Summary Cards */}
               <SummaryCards summary={summary} />
 
@@ -312,17 +312,17 @@ export default function App() {
 
               {/* Grid 2 Column: Budgets & Goals */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <BudgetsSection 
-                  budgets={budgets} 
-                  transactions={transactions} 
-                  addBudget={addBudget} 
-                  removeBudget={handleRemoveBudget} 
+                <BudgetsSection
+                  budgets={budgets}
+                  transactions={transactions}
+                  addBudget={addBudget}
+                  removeBudget={handleRemoveBudget}
                 />
-                <GoalsSection 
-                  goals={goals} 
-                  addGoal={addGoal} 
-                  contributeGoal={contributeGoal} 
-                  removeGoal={handleRemoveGoal} 
+                <GoalsSection
+                  goals={goals}
+                  addGoal={addGoal}
+                  contributeGoal={contributeGoal}
+                  removeGoal={handleRemoveGoal}
                 />
               </div>
 
@@ -330,7 +330,7 @@ export default function App() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between px-2">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Transaksi Terakhir</h4>
-                  <button 
+                  <button
                     onClick={() => setActiveTab('transactions')}
                     className="flex items-center gap-0.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
                   >
@@ -338,9 +338,9 @@ export default function App() {
                     <ChevronRight size={14} />
                   </button>
                 </div>
-                <TransactionList 
-                  transactions={transactions.slice(0, 5)} 
-                  removeTransaction={handleRemoveTransaction} 
+                <TransactionList
+                  transactions={transactions.slice(0, 5)}
+                  removeTransaction={handleRemoveTransaction}
                 />
               </div>
 
@@ -377,14 +377,14 @@ export default function App() {
               {/* SUB TAB CONTENT */}
               {transactionSubTab === 'history' ? (
                 <div className="animate-fade-in">
-                  <TransactionList 
-                    transactions={transactions} 
-                    removeTransaction={handleRemoveTransaction} 
+                  <TransactionList
+                    transactions={transactions}
+                    removeTransaction={handleRemoveTransaction}
                   />
                 </div>
               ) : (
                 <div className="animate-fade-in">
-                  <RecurringSection 
+                  <RecurringSection
                     recurringTemplates={recurringTemplates}
                     addRecurringTemplate={addRecurringTemplate}
                     toggleRecurringActive={toggleRecurringActive}
@@ -398,32 +398,32 @@ export default function App() {
 
           {activeTab === 'budgets' && (
             <div className="animate-fade-in">
-              <BudgetsSection 
-                budgets={budgets} 
-                transactions={transactions} 
-                addBudget={addBudget} 
-                removeBudget={handleRemoveBudget} 
+              <BudgetsSection
+                budgets={budgets}
+                transactions={transactions}
+                addBudget={addBudget}
+                removeBudget={handleRemoveBudget}
               />
             </div>
           )}
 
           {activeTab === 'goals' && (
             <div className="animate-fade-in">
-              <GoalsSection 
-                goals={goals} 
-                addGoal={addGoal} 
-                contributeGoal={contributeGoal} 
-                removeGoal={handleRemoveGoal} 
+              <GoalsSection
+                goals={goals}
+                addGoal={addGoal}
+                contributeGoal={contributeGoal}
+                removeGoal={handleRemoveGoal}
               />
             </div>
           )}
 
           {activeTab === 'profile' && (
             <div className="animate-fade-in">
-              <ProfileSection 
-                user={user} 
-                updateUserProfile={updateUserProfile} 
-                isDemo={isDemo} 
+              <ProfileSection
+                user={user}
+                updateUserProfile={updateUserProfile}
+                isDemo={isDemo}
                 onLogout={logout}
               />
             </div>
@@ -437,10 +437,10 @@ export default function App() {
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} onAddClick={() => setIsModalOpen(true)} />
 
       {/* 7. POPUP MODAL TRANSAKSI BARU */}
-      <TransactionModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        addTransaction={addTransaction} 
+      <TransactionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        addTransaction={addTransaction}
       />
 
       {/* 8. GLOBAL DELETE CONFIRMATION MODAL */}
@@ -454,12 +454,12 @@ export default function App() {
               </div>
               <h3 className="text-base font-extrabold text-slate-900 tracking-tight">{confirmModal.title}</h3>
             </div>
-            
+
             {/* Message */}
             <p className="text-xs text-slate-500 font-semibold leading-relaxed mb-6">
               {confirmModal.message}
             </p>
-            
+
             {/* Buttons */}
             <div className="flex items-center gap-3">
               <button

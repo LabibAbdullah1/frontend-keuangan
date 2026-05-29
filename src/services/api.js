@@ -685,7 +685,13 @@ export const api = {
   createRecurringTemplate: (data) => request('/recurring', { method: 'POST', body: JSON.stringify(data) }),
   toggleRecurringTemplate: (id, is_active) => request(`/recurring/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ is_active }) }),
   deleteRecurringTemplate: (id) => request(`/recurring/${id}`, { method: 'DELETE' }),
-  processRecurringTransactions: () => request('/cron/process-recurring', { method: 'POST' }),
+  processRecurringTransactions: () => 
+    request('/cron/process-recurring', { 
+      method: 'POST',
+      headers: {
+        'X-CRON-KEY': import.meta.env.VITE_CRON_SECURE_KEY || ''
+      }
+    }),
 
   // Profil User
   updateProfile: (data) => request('/users/profile', { method: 'PUT', body: JSON.stringify(data) })
