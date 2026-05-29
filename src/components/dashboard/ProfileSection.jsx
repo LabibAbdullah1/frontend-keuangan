@@ -283,7 +283,7 @@ export default function ProfileSection({ user, updateUserProfile, isDemo, onLogo
                   type="text"
                   placeholder="Masukkan username"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
                   className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-800 placeholder:text-slate-400 bg-white"
                   required
                 />
