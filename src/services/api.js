@@ -515,6 +515,32 @@ const handleMockRequest = (path, options = {}) => {
     };
   }
 
+  // 7. RUTE PROFIL USER (USER PROFILE)
+  if (path.startsWith('/users/profile')) {
+    if (method === 'PUT') {
+      const updatedUser = {
+        ..._user,
+        username: body.username,
+        email: body.email
+      };
+      _user = updatedUser;
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Dispatch event agar App.jsx tahu ada perubahan
+      window.dispatchEvent(new Event('auth-change'));
+      
+      return {
+        success: true,
+        message: 'Profil Anda berhasil diperbarui (Mode Demo).',
+        data: {
+          user: updatedUser,
+          accessToken: 'mock-access-token',
+          refreshToken: 'mock-refresh-token'
+        }
+      };
+    }
+  }
+
   return { success: false, message: `Rute mock '${path}' tidak ditemukan.` };
 };
 
@@ -579,6 +605,15 @@ export const api = {
   getCurrentUser: () => _user,
   getAccessToken: () => _accessToken,
   isAuthenticated: () => !!_refreshToken,
+
+  setSession: (user, accessToken, refreshToken) => {
+    _user = user;
+    _accessToken = accessToken;
+    _refreshToken = refreshToken;
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('refreshToken', refreshToken);
+    window.dispatchEvent(new Event('auth-change'));
+  },
 
   ensureAccessToken: async () => {
     if (_accessToken) return _accessToken;
@@ -650,5 +685,8 @@ export const api = {
   createRecurringTemplate: (data) => request('/recurring', { method: 'POST', body: JSON.stringify(data) }),
   toggleRecurringTemplate: (id, is_active) => request(`/recurring/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ is_active }) }),
   deleteRecurringTemplate: (id) => request(`/recurring/${id}`, { method: 'DELETE' }),
-  processRecurringTransactions: () => request('/cron/process-recurring', { method: 'POST' })
+  processRecurringTransactions: () => request('/cron/process-recurring', { method: 'POST' }),
+
+  // Profil User
+  updateProfile: (data) => request('/users/profile', { method: 'PUT', body: JSON.stringify(data) })
 };

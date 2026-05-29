@@ -9,6 +9,7 @@ import GoalsSection from './components/dashboard/GoalsSection';
 import TransactionList from './components/dashboard/TransactionList';
 import TransactionModal from './components/dashboard/TransactionModal';
 import RecurringSection from './components/dashboard/RecurringSection';
+import ProfileSection from './components/dashboard/ProfileSection';
 import Auth from './components/auth/Auth';
 
 import { 
@@ -55,12 +56,27 @@ export default function App() {
     addRecurringTemplate,
     toggleRecurringActive,
     removeRecurringTemplate,
-    triggerProcessRecurring
+    triggerProcessRecurring,
+    updateUserProfile
   } = useFinance();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [transactionSubTab, setTransactionSubTab] = useState('history'); // 'history' or 'recurring'
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [profilePic, setProfilePic] = useState(localStorage.getItem(`user_avatar_${user?.id}`) || '');
+
+  React.useEffect(() => {
+    setProfilePic(localStorage.getItem(`user_avatar_${user?.id}`) || '');
+  }, [user]);
+
+  React.useEffect(() => {
+    const handleAuthChange = () => {
+      setProfilePic(localStorage.getItem(`user_avatar_${user?.id}`) || '');
+    };
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
+  }, [user]);
 
   // Global Delete Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState({
@@ -191,14 +207,26 @@ export default function App() {
             </span>
             <h2 className="text-xl font-extrabold text-slate-950 tracking-tight capitalize flex items-center justify-between lg:block">
               <span>{getGreeting()}, {user?.username || 'User'}!</span>
-              {/* Tombol Logout Khusus Seluler (Mobile) di Header */}
-              <button
-                onClick={logout}
-                title="Keluar"
-                className="lg:hidden flex items-center justify-center p-2.5 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl hover:bg-rose-100 transition-all focus:outline-none"
-              >
-                <LogOut size={15} />
-              </button>
+              {/* Tombol Profil Khusus Seluler (Mobile < 768px) di Header */}
+              <div className="md:hidden flex items-center">
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold font-mono transition-all relative overflow-hidden bg-slate-100 ${
+                    activeTab === 'profile'
+                      ? 'bg-gradient-to-tr from-blue-600 to-indigo-600 ring-2 ring-blue-500 ring-offset-2 scale-95 shadow-inner'
+                      : 'bg-gradient-to-tr from-blue-500 to-sky-400 hover:opacity-90 shadow-md'
+                  }`}
+                >
+                  {profilePic ? (
+                    <img src={profilePic} alt="User Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{user?.username?.slice(0, 2).toUpperCase() || 'U'}</span>
+                  )}
+                  {activeTab === 'profile' && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-blue-600 border border-white z-10" />
+                  )}
+                </button>
+              </div>
             </h2>
             <p className="text-xs text-slate-500 font-medium">{getGreetingQuote()}</p>
           </div>
@@ -208,6 +236,27 @@ export default function App() {
             <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-100 shadow-sm rounded-xl text-xs text-slate-500 font-semibold">
               <Calendar size={14} className="text-slate-400" />
               <span>{new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'short' }).format(new Date())}</span>
+            </div>
+
+            {/* Tombol Profil Khusus Tablet (768px - 1024px) di sebelah kanan Tanggal */}
+            <div className="hidden md:flex lg:hidden items-center">
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold font-mono transition-all relative overflow-hidden bg-slate-100 ${
+                  activeTab === 'profile'
+                    ? 'bg-gradient-to-tr from-blue-600 to-indigo-600 ring-2 ring-blue-500 ring-offset-2 scale-95 shadow-inner'
+                    : 'bg-gradient-to-tr from-blue-500 to-sky-400 hover:opacity-90 shadow-md'
+                }`}
+              >
+                {profilePic ? (
+                  <img src={profilePic} alt="User Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{user?.username?.slice(0, 2).toUpperCase() || 'U'}</span>
+                )}
+                {activeTab === 'profile' && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-blue-600 border border-white z-10" />
+                )}
+              </button>
             </div>
 
             {/* Catat Transaksi Button (Hanya tampil di Desktop) */}
@@ -365,6 +414,17 @@ export default function App() {
                 addGoal={addGoal} 
                 contributeGoal={contributeGoal} 
                 removeGoal={handleRemoveGoal} 
+              />
+            </div>
+          )}
+
+          {activeTab === 'profile' && (
+            <div className="animate-fade-in">
+              <ProfileSection 
+                user={user} 
+                updateUserProfile={updateUserProfile} 
+                isDemo={isDemo} 
+                onLogout={logout}
               />
             </div>
           )}

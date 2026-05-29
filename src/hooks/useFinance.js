@@ -277,6 +277,34 @@ export const useFinance = () => {
     }
   };
 
+  const updateUserProfile = async (data) => {
+    try {
+      setLoading(true);
+      const res = await api.updateProfile(data);
+      if (res.success) {
+        if (res.data && res.data.user) {
+          localStorage.setItem('user', JSON.stringify(res.data.user));
+          setUser(res.data.user);
+        }
+        if (res.data && res.data.refreshToken) {
+          localStorage.setItem('refreshToken', res.data.refreshToken);
+        }
+        // Pastikan token baru dicatat di memori api service
+        if (res.data && res.data.accessToken) {
+          // Token access baru disematkan langsung
+          api.ensureAccessToken(); // ini akan dipanggil otomatis, tapi mari fetch data
+        }
+        await fetchAllData(true);
+        return { success: true, message: res.message || 'Profil berhasil diperbarui.' };
+      }
+      return { success: false, message: res.message || 'Gagal memperbarui profil.' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     user,
     isAuthenticated,
@@ -305,6 +333,7 @@ export const useFinance = () => {
     addRecurringTemplate,
     toggleRecurringActive,
     removeRecurringTemplate,
-    triggerProcessRecurring
+    triggerProcessRecurring,
+    updateUserProfile
   };
 };

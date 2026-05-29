@@ -1,18 +1,35 @@
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   LogOut,
   PieChart,
   Receipt,
   Target,
-  Wallet
+  Wallet,
+  User
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
+  const [profilePic, setProfilePic] = useState(localStorage.getItem(`user_avatar_${user?.id}`) || '');
+
+  useEffect(() => {
+    setProfilePic(localStorage.getItem(`user_avatar_${user?.id}`) || '');
+  }, [user]);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setProfilePic(localStorage.getItem(`user_avatar_${user?.id}`) || '');
+    };
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
+  }, [user]);
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'transactions', label: 'Transaksi', icon: Receipt },
     { id: 'budgets', label: 'Anggaran', icon: PieChart },
     { id: 'goals', label: 'Target Tabungan', icon: Target },
+    { id: 'profile', label: 'Profil Saya', icon: User },
   ];
 
   // Helper untuk mendapatkan inisial dari username/nama
@@ -67,17 +84,28 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
       {/* USER PROFILE & FOOTER */}
       <div className="p-4 border-t border-slate-50">
         <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50/70 border border-slate-100/50">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-sky-400 flex items-center justify-center text-white font-bold text-sm shadow-inner shadow-black/10">
-            {getInitials(user?.username)}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-800 truncate capitalize">{user?.username || 'Guest'}</p>
-            <p className="text-[10px] text-slate-400 font-medium truncate">{user?.email || 'Premium Member'}</p>
+          <div
+            onClick={() => setActiveTab('profile')}
+            className="flex flex-1 items-center gap-3 min-w-0 cursor-pointer hover:bg-white/80 p-1 rounded-lg transition-all duration-200 group/footer"
+          >
+            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-sm shadow-inner shrink-0 group-hover/footer:scale-[1.03] transition-transform duration-200 overflow-hidden">
+              {profilePic ? (
+                <img src={profilePic} alt="User Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-tr from-blue-500 to-sky-400 flex items-center justify-center text-white font-bold text-sm shadow-inner shadow-black/10">
+                  {getInitials(user?.username)}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-slate-800 truncate capitalize group-hover/footer:text-blue-600 transition-colors duration-200">{user?.username || 'Guest'}</p>
+              <p className="text-[10px] text-slate-400 font-medium truncate">{user?.email || 'Premium Member'}</p>
+            </div>
           </div>
           <button
             onClick={onLogout}
             title="Keluar"
-            className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-white transition-colors duration-200 focus:outline-none"
+            className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-white transition-colors duration-200 focus:outline-none shrink-0"
           >
             <LogOut size={15} />
           </button>
