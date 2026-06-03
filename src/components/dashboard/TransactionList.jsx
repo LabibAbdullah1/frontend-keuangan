@@ -261,17 +261,17 @@ export default function TransactionList({ transactions, removeTransaction, dashb
             return (
               <div 
                 key={tx.id} 
-                className="flex items-center justify-between p-3.5 border border-slate-100 rounded-xl bg-slate-50/20 active:bg-slate-50 transition-colors"
+                className="flex items-center justify-between p-3.5 border border-slate-100 rounded-xl bg-slate-50/20 active:bg-slate-50 transition-colors gap-3"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   {/* Icon wrapper */}
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${
                     isIncome ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'
                   }`}>
                     {isIncome ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate">{tx.note || tx.category}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-900 break-words pr-2">{tx.note || tx.category}</p>
                     <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px] text-slate-400 font-medium">
                       <span>{tx.category}</span>
                       <span>•</span>
@@ -288,7 +288,7 @@ export default function TransactionList({ transactions, removeTransaction, dashb
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <p className={`text-xs font-bold ${
                     isIncome ? 'text-emerald-600' : 'text-slate-900'
                   }`}>

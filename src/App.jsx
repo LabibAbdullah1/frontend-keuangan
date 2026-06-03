@@ -13,6 +13,7 @@ import ProfileSection from './components/dashboard/ProfileSection';
 import CalculatorSection from './components/dashboard/CalculatorSection';
 import CategorySection from './components/dashboard/CategorySection';
 import Auth from './components/auth/Auth';
+import OnboardingModal from './components/layout/OnboardingModal';
 
 import {
   Plus,
@@ -26,8 +27,7 @@ import {
   Sparkles,
   LogOut,
   RefreshCw,
-  AlertTriangle,
-  Menu
+  AlertTriangle
 } from 'lucide-react';
 import { formatRupiah } from './utils/format';
 
@@ -82,6 +82,7 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [transactionSubTab, setTransactionSubTab] = useState('history'); // 'history' or 'recurring'
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   const [profilePic, setProfilePic] = useState(localStorage.getItem(`user_avatar_${user?.id}`) || '');
 
@@ -95,6 +96,15 @@ export default function App() {
     };
     window.addEventListener('auth-change', handleAuthChange);
     return () => window.removeEventListener('auth-change', handleAuthChange);
+  }, [user]);
+
+  React.useEffect(() => {
+    if (user?.id) {
+      const completed = localStorage.getItem(`has_completed_onboarding_${user.id}`);
+      if (!completed) {
+        setIsOnboardingOpen(true);
+      }
+    }
   }, [user]);
 
   // Global Delete Confirmation Modal State
@@ -208,20 +218,20 @@ export default function App() {
       />
 
       {/* 2. MAIN APP CONTENT CONTAINER */}
-      <div className="flex-1 flex flex-col min-h-screen lg:pl-64">
+      <div className="flex-1 flex flex-col min-h-screen lg:pl-64 min-w-0">
         <main className="flex-1 flex flex-col pb-28 lg:pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
 
-        {/* BANNER STATUS KONEKSI & SINKRONISASI */}
+        {/* BANNER STATUS KONEKSI & SINKRONISASI PREMIUM */}
         {(isOffline || isDemo || isSyncing || syncQueueLength > 0) && (
-          <div className={`mt-4 p-3 rounded-2xl border text-xs flex items-center justify-between gap-3 shadow-sm select-none animate-fade-in ${
+          <div className={`mt-4 p-3.5 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md backdrop-blur-md select-none animate-fade-in ${
             isSyncing 
-              ? 'bg-blue-50 border-blue-200/60 text-blue-800 shadow-blue-500/5' 
+              ? 'bg-blue-50/95 border-blue-200/60 text-blue-900 shadow-blue-500/5' 
               : (isOffline || isDemo) 
-                ? 'bg-amber-50 border-amber-200/60 text-amber-800 shadow-amber-500/5'
-                : 'bg-emerald-50 border-emerald-200/60 text-emerald-800 shadow-emerald-500/5'
+                ? 'bg-amber-50/95 border-amber-200/60 text-amber-900 shadow-amber-500/5'
+                : 'bg-emerald-50/95 border-emerald-200/60 text-emerald-900 shadow-emerald-500/5'
           }`}>
-            <div className="flex items-center gap-2.5">
-              <div className={`w-7 h-7 rounded-lg text-white flex items-center justify-center shrink-0 ${
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className={`w-9 h-9 rounded-xl text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm ${
                 isSyncing 
                   ? 'bg-blue-600' 
                   : (isOffline || isDemo) 
@@ -229,44 +239,43 @@ export default function App() {
                     : 'bg-emerald-500'
               }`}>
                 {isSyncing ? (
-                  <RefreshCw size={14} className="animate-spin" />
+                  <RefreshCw size={16} className="animate-spin" />
                 ) : (isOffline || isDemo) ? (
-                  <WifiOff size={14} />
+                  <WifiOff size={16} />
                 ) : (
-                  <RefreshCw size={14} />
+                  <RefreshCw size={16} />
                 )}
               </div>
-              <div>
-                <p className="font-bold">
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[13px] tracking-tight leading-none text-slate-900 flex items-center gap-1.5 flex-wrap">
                   {isSyncing 
-                    ? 'Menyinkronkan Data...' 
+                    ? 'Sinkronisasi Data Berlangsung...' 
                     : (isOffline || isDemo) 
-                      ? 'Mode Offline Aktif' 
-                      : 'Data Tersinkronisasi'}
+                      ? 'Mode Offline Aktif (Data Tersimpan Aman)' 
+                      : 'Semua Data Berhasil Tersinkronisasi'}
+                  {(isOffline || isDemo) && (
+                    <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md border border-emerald-200 font-extrabold shadow-2xs">
+                      🔒 Enkripsi Lokal
+                    </span>
+                  )}
                 </p>
-                <p className={`text-[10px] font-medium mt-0.5 ${
-                  isSyncing 
-                    ? 'text-blue-600' 
-                    : (isOffline || isDemo) 
-                      ? 'text-amber-600' 
-                      : 'text-emerald-600'
-                }`}>
+                <p className="text-[10.5px] leading-relaxed text-slate-600 mt-1 font-medium">
                   {isSyncing 
-                    ? `Sedang mengunggah ${syncQueueLength} perubahan ke server pusat secara aman.` 
+                    ? `Sedang mengunggah ${syncQueueLength} perubahan ke server secara aman. Mohon jangan menutup aplikasi.` 
                     : (isOffline || isDemo) 
-                      ? `Koneksi terputus. Anda tetap bisa menggunakan aplikasi. ${syncQueueLength > 0 ? `Ada ${syncQueueLength} perubahan tersimpan secara lokal dan akan disinkronkan saat online.` : 'Perubahan akan disimpan sementara di LocalStorage.'}`
-                      : 'Semua perubahan offline Anda telah berhasil disinkronkan ke server.'}
+                      ? `Jangan khawatir! Koneksi Anda terputus, tetapi Anda tetap bisa menggunakan aplikasi secara normal. Semua perubahan disimpan dengan aman di penyimpanan lokal Anda dan akan disinkronkan secara otomatis begitu internet terhubung kembali.`
+                      : 'Semua perubahan offline Anda telah diverifikasi dan disinkronkan ke server secara aman.'}
                 </p>
               </div>
             </div>
             {syncQueueLength > 0 && !isSyncing && (
-              <span className="text-[9px] font-bold uppercase tracking-wider bg-white px-2 py-0.5 rounded-lg border border-amber-200 text-amber-700 shrink-0">
-                {syncQueueLength} Tertunda
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-white/90 px-3 py-1 rounded-xl border border-amber-200 text-amber-800 shadow-sm shrink-0 self-start sm:self-center">
+                {syncQueueLength} Perubahan Tertunda
               </span>
             )}
             {isSyncing && (
-              <span className="text-[9px] font-bold uppercase tracking-wider bg-white px-2 py-0.5 rounded-lg border border-blue-200 text-blue-700 shrink-0 animate-pulse">
-                Proses
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-white/90 px-3 py-1 rounded-xl border border-blue-200 text-blue-800 shadow-sm shrink-0 animate-pulse self-start sm:self-center">
+                Sinkronisasi...
               </span>
             )}
           </div>
@@ -276,14 +285,6 @@ export default function App() {
         <header className="py-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 select-none">
           <div className="space-y-1">
             <span className="text-[10px] font-bold text-blue-600 tracking-widest uppercase flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-600 active:scale-95 transition-all mr-1.5 shrink-0 bg-slate-50 border border-slate-200/40 flex items-center justify-center"
-                title="Buka Menu"
-              >
-                <Menu size={12} className="stroke-[2.5]" />
-              </button>
               <Sparkles size={11} className="stroke-[2.5]" />
               {dashboardMode === 'couple' ? 'Couple Finance Hub 🧑‍🤝‍🧑' : 'Personal Finance Hub'}
             </span>
@@ -369,27 +370,27 @@ export default function App() {
         {/* 4. RATING KESEHATAN FINANSIAL (DI ATAS DASHBOARD) */}
         {activeTab === 'dashboard' && (
           <section className="mt-6 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in select-none">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-inner">
+            <div className="flex items-start gap-3 w-full sm:w-auto">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-inner shrink-0 mt-0.5">
                 <Heart size={20} className="fill-white/20 stroke-[2]" />
               </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-xs font-bold text-slate-900">Skor Kesehatan Finansial:</h4>
-                  <span className="text-[10px] font-bold bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:items-center gap-1 sm:gap-2 flex-wrap">
+                  <h4 className="text-xs font-bold text-slate-900 leading-tight">Skor Kesehatan Finansial:</h4>
+                  <span className="text-[10px] font-bold bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full w-max">
                     {financialHealth?.health_score}/100 — {financialHealth?.rating}
                   </span>
                 </div>
                 {financialHealth?.recommendations?.length > 0 && (
-                  <p className="text-[10px] text-slate-500 font-semibold line-clamp-1">
+                  <p className="text-[10px] text-slate-500 font-semibold break-words">
                     👉 {financialHealth?.recommendations?.[0]}
                   </p>
                 )}
               </div>
             </div>
             {/* Panel rekomendasi popup toggle or detail indicator */}
-            <div className="flex items-center gap-1 text-[10px] text-blue-600 font-bold bg-blue-50/50 hover:bg-blue-50 border border-blue-100/30 px-3 py-1.5 rounded-xl transition-all cursor-pointer">
-              <Info size={12} />
+            <div className="flex items-center justify-center gap-1 text-[10px] text-blue-600 font-bold bg-blue-50/50 hover:bg-blue-50 border border-blue-100/30 px-3 py-2 rounded-xl transition-all cursor-pointer w-full sm:w-auto shrink-0 active:scale-[0.98]">
+              <Info size={12} className="stroke-[2.5]" />
               <span>Detail Analisis</span>
             </div>
           </section>
@@ -551,6 +552,7 @@ export default function App() {
                 acceptCoupleInvite={acceptCoupleInvite}
                 rejectCoupleInvite={rejectCoupleInvite}
                 disconnectCouple={disconnectCouple}
+                triggerOnboarding={() => setIsOnboardingOpen(true)}
               />
             </div>
           )}
@@ -607,6 +609,13 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* 9. ONBOARDING TUTORIAL MODAL */}
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        user={user}
+      />
 
     </div>
   );

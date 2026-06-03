@@ -43,21 +43,9 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashb
   };
 
   return (
-    <>
-      {/* BACKDROP OVERLAY FOR MOBILE */}
-      <div 
-        className={`fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[45] transition-all duration-300 lg:hidden ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={onClose}
-      />
-
-      {/* SIDEBAR PANEL */}
-      <aside className={`flex flex-col w-64 bg-white border-r border-slate-100 h-screen fixed top-0 left-0 bottom-0 shrink-0 select-none transition-transform duration-300 z-50 lg:z-30 lg:translate-x-0 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        {/* BRANDING */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-slate-50">
+    <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-slate-100 h-screen fixed top-0 left-0 bottom-0 shrink-0 select-none z-30">
+      {/* BRANDING */}
+      <div className="h-20 flex items-center justify-between px-6 border-b border-slate-50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/10 transition-transform duration-300 hover:rotate-6">
               <Wallet size={20} className="stroke-[2.5]" />
@@ -183,6 +171,5 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashb
         </div>
       </div>
     </aside>
-    </>
   );
 }

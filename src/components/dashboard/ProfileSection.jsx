@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Lock, Eye, EyeOff, Check, AlertTriangle, ShieldCheck, UserCheck, Calendar, LogOut, Camera } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Check, AlertTriangle, ShieldCheck, UserCheck, Calendar, LogOut, Camera, BookOpen } from 'lucide-react';
 
 export default function ProfileSection({ 
   user, 
@@ -13,7 +13,8 @@ export default function ProfileSection({
   sendCoupleInvite,
   acceptCoupleInvite,
   rejectCoupleInvite,
-  disconnectCouple
+  disconnectCouple,
+  triggerOnboarding
 }) {
   const [username, setUsername] = useState(user?.username || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -347,6 +348,16 @@ export default function ProfileSection({
           </div>
 
           <div className="w-full border-t border-slate-100/80 my-4" />
+
+          {/* Onboarding Tutorial Trigger Button */}
+          <button
+            type="button"
+            onClick={triggerOnboarding}
+            className="w-full py-2.5 mb-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl font-bold text-xs shadow-sm transition-all border border-blue-100/50 flex items-center justify-center gap-2 active:scale-[0.98]"
+          >
+            <BookOpen size={14} className="stroke-[2.5]" />
+            <span>💡 Panduan Penggunaan</span>
+          </button>
 
           {/* Logout Button (Terutama untuk Mobile view, dipindahkan ke sini) */}
           <button

@@ -36,25 +36,26 @@ export default function CalculatorSection() {
   const [activeCalcTab, setActiveCalcTab] = useState('budget'); // 'budget', 'savings', 'emergency', 'debt'
   const isDemo = checkDemoMode();
 
-  // Helper for formatting thousand separators in input fields (dot as separator)
-  const formatThousand = (val) => {
+  // Helper untuk memformat angka dengan titik sebagai pemisah ribuan saat diketik
+  const formatThousands = (val) => {
     if (val === undefined || val === null || val === '') return '';
-    const clean = val.toString().replace(/\D/g, '');
+    let clean = val.toString().replace(/\D/g, '');
     if (!clean) return '';
-    const parsed = parseInt(clean, 10);
-    if (parsed === 0) return '';
-    return parsed.toLocaleString('id-ID');
+    // Hapus angka 0 di depan jika ada angka lain setelahnya
+    clean = clean.replace(/^0+/, '');
+    if (clean === '') return '0';
+    return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
-  const parseThousand = (str) => {
-    const clean = str.replace(/\D/g, '');
-    return clean === '' ? 0 : parseInt(clean, 10);
+  const parseRawNumber = (val) => {
+    if (!val) return 0;
+    return parseFloat(val.toString().replace(/\./g, '')) || 0;
   };
 
   // ---------------------------------------------------------
   // 1. STATE & LOGIC: KALKULATOR ANGGARAN 50/30/20
   // ---------------------------------------------------------
-  const [budgetIncome, setBudgetIncome] = useState(10000000);
+  const [budgetIncome, setBudgetIncome] = useState('10.000.000');
   const [budgetResult, setBudgetResult] = useState(null);
 
   const calculateBudget = (incomeVal) => {
@@ -90,7 +91,7 @@ export default function CalculatorSection() {
   };
 
   useEffect(() => {
-    calculateBudget(budgetIncome);
+    calculateBudget(parseRawNumber(budgetIncome));
   }, [budgetIncome]);
 
   // Donut Chart Data untuk Budget
@@ -107,11 +108,11 @@ export default function CalculatorSection() {
   // 2. STATE & LOGIC: SIMULASI TARGET TABUNGAN
   // ---------------------------------------------------------
   const [savingsMode, setSavingsMode] = useState('contribution'); // 'contribution' (cari angsuran) atau 'duration' (cari durasi)
-  const [savingsTarget, setSavingsTarget] = useState(50000000);
-  const [savingsInitial, setSavingsInitial] = useState(5000000);
-  const [savingsDuration, setSavingsDuration] = useState(24);
-  const [savingsMonthlyContrib, setSavingsMonthlyContrib] = useState(2000000);
-  const [savingsInterestRate, setSavingsInterestRate] = useState(6);
+  const [savingsTarget, setSavingsTarget] = useState('50.000.000');
+  const [savingsInitial, setSavingsInitial] = useState('5.000.000');
+  const [savingsDuration, setSavingsDuration] = useState('24');
+  const [savingsMonthlyContrib, setSavingsMonthlyContrib] = useState('2.000.000');
+  const [savingsInterestRate, setSavingsInterestRate] = useState('6');
   const [savingsResult, setSavingsResult] = useState(null);
   const [savingsLoading, setSavingsLoading] = useState(false);
   const [showSavingsAmortization, setShowSavingsAmortization] = useState(false);
@@ -120,7 +121,7 @@ export default function CalculatorSection() {
   const handleSavingsSimulate = async (e) => {
     if (e) e.preventDefault();
     setSavingsError('');
-    if (Number(savingsInitial) >= Number(savingsTarget)) {
+    if (parseRawNumber(savingsInitial) >= parseRawNumber(savingsTarget)) {
       setSavingsError('Tabungan awal tidak boleh lebih besar atau sama dengan target nominal.');
       return;
     }
@@ -128,15 +129,15 @@ export default function CalculatorSection() {
     try {
       setSavingsLoading(true);
       const payload = {
-        target_amount: Number(savingsTarget),
-        current_amount: Number(savingsInitial),
+        target_amount: parseRawNumber(savingsTarget),
+        current_amount: parseRawNumber(savingsInitial),
         annual_interest_rate: Number(savingsInterestRate)
       };
 
       if (savingsMode === 'contribution') {
         payload.duration_months = Number(savingsDuration);
       } else {
-        payload.monthly_contribution = Number(savingsMonthlyContrib);
+        payload.monthly_contribution = parseRawNumber(savingsMonthlyContrib);
       }
 
       const res = await api.getSavingsProjection(payload);
@@ -199,15 +200,12 @@ export default function CalculatorSection() {
   // ---------------------------------------------------------
   // 4. STATE & LOGIC: PELUNASAN UTANG (SNOWBALL VS AVALANCHE)
   // ---------------------------------------------------------
-  const [debts, setDebts] = useState([
-    { id: 1, name: 'Kartu Kredit A', balance: 5000000, interest_rate: 18, minimum_payment: 250000 },
-    { id: 2, name: 'Pinjol B', balance: 2500000, interest_rate: 24, minimum_payment: 200000 }
-  ]);
+  const [debts, setDebts] = useState([]);
   const [newDebtName, setNewDebtName] = useState('');
   const [newDebtBalance, setNewDebtBalance] = useState('');
   const [newDebtRate, setNewDebtRate] = useState('');
   const [newDebtMinPay, setNewDebtMinPay] = useState('');
-  const [extraPayment, setExtraPayment] = useState(500000);
+  const [extraPayment, setExtraPayment] = useState('500.000');
 
   const [debtResult, setDebtResult] = useState(null);
   const [debtLoading, setDebtLoading] = useState(false);
@@ -218,8 +216,8 @@ export default function CalculatorSection() {
       setDebtError('Semua kolom utang baru wajib diisi.');
       return;
     }
-    const balanceNum = Number(newDebtBalance);
-    const minPayNum = Number(newDebtMinPay);
+    const balanceNum = parseRawNumber(newDebtBalance);
+    const minPayNum = parseRawNumber(newDebtMinPay);
 
     if (minPayNum >= balanceNum) {
       setDebtError('Cicilan minimum harus lebih kecil dari saldo utang.');
@@ -264,7 +262,7 @@ export default function CalculatorSection() {
           interest_rate,
           minimum_payment
         })),
-        extra_monthly_payment: Number(extraPayment)
+        extra_monthly_payment: parseRawNumber(extraPayment)
       });
       if (res.success) {
         setDebtResult(res.data);
@@ -295,10 +293,10 @@ export default function CalculatorSection() {
           </div>
           <p className="text-xs text-slate-500 font-medium">Simulasikan perencanaan anggaran, tabungan, dana darurat, dan strategi pelunasan utang Anda</p>
         </div>
-        <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200/40 rounded-xl text-xs max-w-max">
+        <div className="grid grid-cols-2 md:flex p-1 md:p-0.5 bg-slate-100 border border-slate-200/40 rounded-xl text-xs w-full md:w-auto gap-1">
           <button
             onClick={() => setActiveCalcTab('budget')}
-            className={`px-3.5 py-2 rounded-lg font-bold transition-all ${
+            className={`px-3 py-2 md:px-3.5 md:py-2 rounded-lg font-bold transition-all text-center text-[10.5px] md:text-xs flex items-center justify-center whitespace-nowrap ${
               activeCalcTab === 'budget' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -306,7 +304,7 @@ export default function CalculatorSection() {
           </button>
           <button
             onClick={() => setActiveCalcTab('savings')}
-            className={`px-3.5 py-2 rounded-lg font-bold transition-all ${
+            className={`px-3 py-2 md:px-3.5 md:py-2 rounded-lg font-bold transition-all text-center text-[10.5px] md:text-xs flex items-center justify-center whitespace-nowrap ${
               activeCalcTab === 'savings' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -314,7 +312,7 @@ export default function CalculatorSection() {
           </button>
           <button
             onClick={() => setActiveCalcTab('emergency')}
-            className={`px-3.5 py-2 rounded-lg font-bold transition-all ${
+            className={`px-3 py-2 md:px-3.5 md:py-2 rounded-lg font-bold transition-all text-center text-[10.5px] md:text-xs flex items-center justify-center whitespace-nowrap ${
               activeCalcTab === 'emergency' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -322,7 +320,7 @@ export default function CalculatorSection() {
           </button>
           <button
             onClick={() => setActiveCalcTab('debt')}
-            className={`px-3.5 py-2 rounded-lg font-bold transition-all ${
+            className={`px-3 py-2 md:px-3.5 md:py-2 rounded-lg font-bold transition-all text-center text-[10.5px] md:text-xs flex items-center justify-center whitespace-nowrap ${
               activeCalcTab === 'debt' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -357,8 +355,8 @@ export default function CalculatorSection() {
                     type="text"
                     inputMode="numeric"
                     placeholder="0"
-                    value={formatThousand(budgetIncome)}
-                    onChange={(e) => setBudgetIncome(parseThousand(e.target.value))}
+                    value={budgetIncome}
+                    onChange={(e) => setBudgetIncome(formatThousands(e.target.value))}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
@@ -369,8 +367,8 @@ export default function CalculatorSection() {
                     min="1000000"
                     max="50000000"
                     step="500000"
-                    value={budgetIncome || 1000000}
-                    onChange={(e) => setBudgetIncome(Number(e.target.value))}
+                    value={parseRawNumber(budgetIncome) || 1000000}
+                    onChange={(e) => setBudgetIncome(formatThousands(e.target.value))}
                     className="w-full accent-blue-600 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
                   />
                   <div className="flex justify-between text-[9px] text-slate-400 font-bold">
@@ -544,8 +542,8 @@ export default function CalculatorSection() {
                   inputMode="numeric"
                   placeholder="0"
                   required
-                  value={formatThousand(savingsTarget)}
-                  onChange={(e) => setSavingsTarget(parseThousand(e.target.value))}
+                  value={savingsTarget}
+                  onChange={(e) => setSavingsTarget(formatThousands(e.target.value))}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -556,8 +554,8 @@ export default function CalculatorSection() {
                   type="text"
                   inputMode="numeric"
                   placeholder="0"
-                  value={formatThousand(savingsInitial)}
-                  onChange={(e) => setSavingsInitial(parseThousand(e.target.value))}
+                  value={savingsInitial}
+                  onChange={(e) => setSavingsInitial(formatThousands(e.target.value))}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -566,11 +564,12 @@ export default function CalculatorSection() {
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700">Durasi Menabung (Bulan):</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
                     required
-                    min="1"
                     value={savingsDuration}
-                    onChange={(e) => setSavingsDuration(Number(e.target.value))}
+                    onChange={(e) => setSavingsDuration(e.target.value.replace(/\D/g, '').replace(/^0+/, ''))}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -582,8 +581,8 @@ export default function CalculatorSection() {
                     inputMode="numeric"
                     placeholder="0"
                     required
-                    value={formatThousand(savingsMonthlyContrib)}
-                    onChange={(e) => setSavingsMonthlyContrib(parseThousand(e.target.value))}
+                    value={savingsMonthlyContrib}
+                    onChange={(e) => setSavingsMonthlyContrib(formatThousands(e.target.value))}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -592,11 +591,21 @@ export default function CalculatorSection() {
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700">Bunga/Imbal Hasil (% Per Tahun):</label>
                 <input
-                  type="number"
-                  step="0.1"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0"
                   value={savingsInterestRate}
-                  onChange={(e) => setSavingsInterestRate(Number(e.target.value))}
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/[^0-9.]/g, '');
+                    const parts = val.split('.');
+                    if (parts.length > 2) {
+                      val = parts[0] + '.' + parts.slice(1).join('');
+                    }
+                    if (val.startsWith('0') && val.length > 1 && val[1] !== '.') {
+                      val = val.replace(/^0+/, '');
+                    }
+                    setSavingsInterestRate(val);
+                  }}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -800,8 +809,8 @@ export default function CalculatorSection() {
                   type="text"
                   inputMode="numeric"
                   placeholder="Misal: 4.000.000"
-                  value={formatThousand(manualExpense)}
-                  onChange={(e) => setManualExpense(parseThousand(e.target.value))}
+                  value={manualExpense}
+                  onChange={(e) => setManualExpense(formatThousands(e.target.value))}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -945,8 +954,8 @@ export default function CalculatorSection() {
                       type="text"
                       inputMode="numeric"
                       placeholder="Saldo (Rp)"
-                      value={formatThousand(newDebtBalance)}
-                      onChange={(e) => setNewDebtBalance(parseThousand(e.target.value))}
+                      value={newDebtBalance}
+                      onChange={(e) => setNewDebtBalance(formatThousands(e.target.value))}
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
                     />
                     <input
@@ -960,8 +969,8 @@ export default function CalculatorSection() {
                       type="text"
                       inputMode="numeric"
                       placeholder="Min. Cicilan"
-                      value={formatThousand(newDebtMinPay)}
-                      onChange={(e) => setNewDebtMinPay(parseThousand(e.target.value))}
+                      value={newDebtMinPay}
+                      onChange={(e) => setNewDebtMinPay(formatThousands(e.target.value))}
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
                     />
                   </div>
@@ -982,8 +991,8 @@ export default function CalculatorSection() {
                   type="text"
                   inputMode="numeric"
                   placeholder="0"
-                  value={formatThousand(extraPayment)}
-                  onChange={(e) => setExtraPayment(parseThousand(e.target.value))}
+                  value={extraPayment}
+                  onChange={(e) => setExtraPayment(formatThousands(e.target.value))}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
                 />
               </div>

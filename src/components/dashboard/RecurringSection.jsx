@@ -31,7 +31,11 @@ const FREQUENCIES = [
 // Format angka dengan titik pemisah ribuan saat mengetik
 const formatThousands = (val) => {
   if (!val) return '';
-  const clean = val.replace(/\D/g, '');
+  let clean = val.replace(/\D/g, '');
+  if (!clean) return '';
+  // Hapus angka 0 di depan jika ada angka lain setelahnya
+  clean = clean.replace(/^0+/, '');
+  if (clean === '') return '0';
   return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 };
 
