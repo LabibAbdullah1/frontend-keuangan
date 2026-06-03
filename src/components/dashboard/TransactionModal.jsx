@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, AlertTriangle, ArrowUpRight, ArrowDownLeft, ChevronDown, Check, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const INCOME_CATEGORIES = ['Gaji', 'Investasi', 'Freelance', 'Hadiah', 'Lain-lain'];
-const EXPENSE_CATEGORIES = ['Makanan', 'Transportasi', 'Hiburan', 'Tagihan', 'Kesehatan', 'Pendidikan', 'Belanja', 'Lain-lain'];
+const INCOME_FALLBACK = ['Gaji', 'Bonus', 'Investasi', 'Deposito', 'Hibah/Hadiah', 'Penjualan', 'Lain-lain'];
+const EXPENSE_FALLBACK = ['Makanan & Minuman', 'Belanja Harian', 'Transportasi', 'Utilitas & Tagihan', 'Sewa Rumah & Kos', 'Kesehatan', 'Pendidikan', 'Hiburan & Rekreasi', 'Liburan', 'Pajak & Asuransi', 'Amal & Donasi', 'Lain-lain'];
 
 // Helper untuk memformat angka dengan titik sebagai pemisah ribuan saat diketik
 const formatThousands = (val) => {
@@ -16,7 +16,7 @@ const parseRawNumber = (formattedVal) => {
   return parseFloat(formattedVal.replace(/\./g, '')) || 0;
 };
 
-export default function TransactionModal({ isOpen, onClose, addTransaction }) {
+export default function TransactionModal({ isOpen, onClose, addTransaction, categories = [] }) {
   const [type, setType] = useState('expense');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
@@ -24,6 +24,12 @@ export default function TransactionModal({ isOpen, onClose, addTransaction }) {
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Helper to get active categories list
+  const getCategoriesList = () => {
+    const list = categories.filter(c => c.type === type).map(c => c.name);
+    return list.length > 0 ? list : (type === 'income' ? INCOME_FALLBACK : EXPENSE_FALLBACK);
+  };
 
   // Custom Dropdown State & Ref
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -53,10 +59,11 @@ export default function TransactionModal({ isOpen, onClose, addTransaction }) {
     }
   }, [isOpen]);
 
-  // Set default kategori saat tipe berubah
+  // Set default kategori saat tipe atau list kategori berubah
   useEffect(() => {
-    setCategory(type === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0]);
-  }, [type]);
+    const list = getCategoriesList();
+    setCategory(list[0] || 'Lain-lain');
+  }, [type, categories]);
 
   // Kunci scroll halaman latar belakang ketika modal terbuka agar user lebih fokus
   useEffect(() => {
@@ -287,7 +294,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction }) {
             {/* List Pilihan Dropdown */}
             {isDropdownOpen && (
               <div className="absolute left-0 right-0 mt-1.5 z-30 bg-white border border-slate-100 shadow-xl rounded-xl py-1 text-xs select-none max-h-48 overflow-y-auto animate-fade-in">
-                {(type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((cat) => {
+                {getCategoriesList().map((cat) => {
                   const isSelected = category === cat;
                   return (
                     <div

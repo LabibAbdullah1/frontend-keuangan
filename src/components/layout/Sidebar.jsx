@@ -5,10 +5,13 @@ import {
   Receipt,
   Target,
   Wallet,
-  User
+  User,
+  Calculator,
+  Tags,
+  X
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashboardMode, changeDashboardMode, partnerInfo }) {
+export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashboardMode, changeDashboardMode, partnerInfo, isOpen, onClose }) {
   const [profilePic, setProfilePic] = useState(localStorage.getItem(`user_avatar_${user?.id}`) || '');
 
   useEffect(() => {
@@ -27,7 +30,9 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashb
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'transactions', label: 'Transaksi', icon: Receipt },
     { id: 'budgets', label: 'Anggaran', icon: PieChart },
+    { id: 'categories', label: 'Kelola Kategori', icon: Tags },
     { id: 'goals', label: 'Target Tabungan', icon: Target },
+    { id: 'calculator', label: 'Kalkulator', icon: Calculator },
     { id: 'profile', label: 'Profil Saya', icon: User },
   ];
 
@@ -38,17 +43,40 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashb
   };
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-slate-100 h-screen fixed top-0 left-0 bottom-0 shrink-0 select-none z-30">
-      {/* BRANDING */}
-      <div className="h-20 flex items-center px-6 border-b border-slate-50 gap-3">
-        <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/10 transition-transform duration-300 hover:rotate-6">
-          <Wallet size={20} className="stroke-[2.5]" />
+    <>
+      {/* BACKDROP OVERLAY FOR MOBILE */}
+      <div 
+        className={`fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[45] transition-all duration-300 lg:hidden ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+      />
+
+      {/* SIDEBAR PANEL */}
+      <aside className={`flex flex-col w-64 bg-white border-r border-slate-100 h-screen fixed top-0 left-0 bottom-0 shrink-0 select-none transition-transform duration-300 z-50 lg:z-30 lg:translate-x-0 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        {/* BRANDING */}
+        <div className="h-20 flex items-center justify-between px-6 border-b border-slate-50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/10 transition-transform duration-300 hover:rotate-6">
+              <Wallet size={20} className="stroke-[2.5]" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-slate-900 tracking-tight leading-none">KeuanganKu</h1>
+              <span className="text-[10px] font-medium text-blue-600 tracking-wider uppercase mt-1 inline-block">Pro Tracker</span>
+            </div>
+          </div>
+
+          {/* CLOSE BUTTON ON MOBILE */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="lg:hidden p-1.5 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <X size={18} />
+          </button>
         </div>
-        <div>
-          <h1 className="text-base font-bold text-slate-900 tracking-tight leading-none">KeuanganKu</h1>
-          <span className="text-[10px] font-medium text-blue-600 tracking-wider uppercase mt-1 inline-block">Pro Tracker</span>
-        </div>
-      </div>
 
       {/* COUPLE MODE SWITCH / LINK BUTTON */}
       <div className="px-4 pt-4 select-none">
@@ -103,7 +131,10 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashb
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                setActiveTab(item.id);
+                if (onClose) onClose();
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
                 isActive
                   ? 'bg-blue-50/70 text-blue-600 font-semibold shadow-sm shadow-blue-500/5'
@@ -129,7 +160,10 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashb
       <div className="p-4 border-t border-slate-50">
         <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50/70 border border-slate-100/50">
           <div
-            onClick={() => setActiveTab('profile')}
+            onClick={() => {
+              setActiveTab('profile');
+              if (onClose) onClose();
+            }}
             className="flex flex-1 items-center gap-3 min-w-0 cursor-pointer hover:bg-white/80 p-1 rounded-lg transition-all duration-200 group/footer"
           >
             <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-sm shadow-inner shrink-0 group-hover/footer:scale-[1.03] transition-transform duration-200 overflow-hidden">
@@ -149,5 +183,6 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashb
         </div>
       </div>
     </aside>
+    </>
   );
 }

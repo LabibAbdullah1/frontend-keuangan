@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { PieChart, Plus, Trash2, X, AlertTriangle, ChevronDown, Check } from 'lucide-react';
 import { formatRupiah } from '../../utils/format';
 
-const EXPENSE_CATEGORIES = ['Makanan', 'Transportasi', 'Hiburan', 'Tagihan', 'Kesehatan', 'Pendidikan', 'Belanja', 'Lain-lain'];
+const EXPENSE_FALLBACK = ['Makanan & Minuman', 'Belanja Harian', 'Transportasi', 'Utilitas & Tagihan', 'Sewa Rumah & Kos', 'Kesehatan', 'Pendidikan', 'Hiburan & Rekreasi', 'Liburan', 'Pajak & Asuransi', 'Amal & Donasi', 'Lain-lain'];
 
 
 // Format angka dengan titik pemisah ribuan saat mengetik
@@ -18,7 +18,7 @@ const parseRawNumber = (val) => {
   return parseFloat(val.replace(/\./g, '')) || 0;
 };
 
-export default function BudgetsSection({ budgets, transactions, addBudget, removeBudget }) {
+export default function BudgetsSection({ budgets, transactions, addBudget, removeBudget, categories = [] }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
@@ -27,6 +27,20 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Helper to fetch expense categories
+  const getExpenseCategories = () => {
+    const list = categories.filter(c => c.type === 'expense').map(c => c.name);
+    return list.length > 0 ? list : EXPENSE_FALLBACK;
+  };
+
+  // Set default category when categories change
+  useEffect(() => {
+    const list = getExpenseCategories();
+    if (!category || !list.includes(category)) {
+      setCategory(list[0] || 'Lain-lain');
+    }
+  }, [categories]);
 
   // Tutup custom dropdown ketika mengklik di luar elemen
   useEffect(() => {
@@ -43,7 +57,8 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
 
   const handleToggleAddForm = () => {
     if (!showAddForm) {
-      setCategory(EXPENSE_CATEGORIES[0]);
+      const list = getExpenseCategories();
+      setCategory(list[0] || 'Lain-lain');
       setAmount('');
       setFormError('');
     }
@@ -82,7 +97,8 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
 
     setSubmitting(false);
     if (res.success) {
-      setCategory(EXPENSE_CATEGORIES[0]);
+      const list = getExpenseCategories();
+      setCategory(list[0] || 'Lain-lain');
       setAmount('');
       setShowAddForm(false);
     } else {
@@ -147,7 +163,7 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
               {/* List Pilihan Dropdown */}
               {isDropdownOpen && (
                 <div className="absolute left-0 right-0 mt-1.5 z-50 bg-white border border-slate-100 shadow-xl rounded-xl py-1 text-xs select-none max-h-48 overflow-y-auto animate-fade-in">
-                  {EXPENSE_CATEGORIES.map((cat) => {
+                  {getExpenseCategories().map((cat) => {
                     const isSelected = category === cat;
                     return (
                       <div

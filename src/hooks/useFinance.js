@@ -6,6 +6,7 @@ export const useFinance = () => {
   const [budgets, setBudgets] = useState([]);
   const [goals, setGoals] = useState([]);
   const [recurringTemplates, setRecurringTemplates] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [summary, setSummary] = useState({ total_income: 0, total_expense: 0, balance: 0 });
   const [categoryExpenses, setCategoryExpenses] = useState([]);
   const [cashflowTrend, setCashflowTrend] = useState([]);
@@ -14,6 +15,9 @@ export const useFinance = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isDemo, setIsDemo] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncQueueLength, setSyncQueueLength] = useState(0);
 
   // State Kelola Bersama Pasangan (Couple Shared Dashboard)
   const [dashboardMode, setDashboardMode] = useState(localStorage.getItem('fe_dashboard_mode') || 'personal');
@@ -42,6 +46,7 @@ export const useFinance = () => {
       setBudgets([]);
       setGoals([]);
       setRecurringTemplates([]);
+      setCategories([]);
       setSummary({ total_income: 0, total_expense: 0, balance: 0 });
       setCategoryExpenses([]);
       setCashflowTrend([]);
@@ -70,6 +75,7 @@ export const useFinance = () => {
         trendRes,
         healthRes,
         recurringRes,
+        categoriesRes,
         partnerRes,
         invitesRes
       ] = await Promise.all([
@@ -81,6 +87,7 @@ export const useFinance = () => {
         api.getCashflowTrend(modeParam),
         api.getFinancialHealth(modeParam),
         api.getRecurringTemplates(modeParam),
+        api.getCategories(),
         api.getActivePartner(),
         api.getInvites()
       ]);
@@ -93,11 +100,14 @@ export const useFinance = () => {
       if (trendRes.success) setCashflowTrend(trendRes.data);
       if (healthRes.success) setFinancialHealth(healthRes.data);
       if (recurringRes.success) setRecurringTemplates(recurringRes.data);
+      if (categoriesRes.success) setCategories(categoriesRes.data);
       
       if (partnerRes.success) setPartnerInfo(partnerRes.data);
       if (invitesRes.success) setIncomingInvites(invitesRes.data);
 
       setIsDemo(checkDemoMode());
+      const queue = JSON.parse(localStorage.getItem('fe_sync_queue') || '[]');
+      setSyncQueueLength(queue.length);
     } catch (err) {
       console.error('Error fetching finance data:', err);
       // Jika error adalah kadaluarsa otentikasi / sesi habis, hapus error di tingkat UI
@@ -115,6 +125,53 @@ export const useFinance = () => {
   useEffect(() => {
     fetchAllData();
   }, [fetchAllData, isAuthenticated, dashboardMode]);
+
+  // Mengelola deteksi koneksi online/offline & memicu sinkronisasi otomatis
+  useEffect(() => {
+    const handleOnline = async () => {
+      setIsOffline(false);
+      setIsSyncing(true);
+      try {
+        const res = await api.syncOfflineData();
+        if (res && res.success && res.processedCount > 0) {
+          console.log(`[Sync] Berhasil menyinkronkan ${res.processedCount} data offline ke server.`);
+        }
+      } catch (err) {
+        console.error('[Sync] Gagal menyinkronkan data offline:', err.message);
+      } finally {
+        setIsSyncing(false);
+        const queue = JSON.parse(localStorage.getItem('fe_sync_queue') || '[]');
+        setSyncQueueLength(queue.length);
+        // Muat ulang data terbaru dari server
+        await fetchAllData(true);
+      }
+    };
+
+    const handleOffline = () => {
+      setIsOffline(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Jalankan pemicu awal jika saat boot up kita online dan ada antrean tertunda
+    if (navigator.onLine) {
+      const queue = JSON.parse(localStorage.getItem('fe_sync_queue') || '[]');
+      if (queue.length > 0) {
+        handleOnline();
+      } else {
+        setSyncQueueLength(0);
+      }
+    } else {
+      const queue = JSON.parse(localStorage.getItem('fe_sync_queue') || '[]');
+      setSyncQueueLength(queue.length);
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [fetchAllData]);
 
   // Handler Autentikasi
   const login = async (emailOrUsername, password) => {
@@ -294,6 +351,46 @@ export const useFinance = () => {
     }
   };
 
+  // Handler CRUD Kategori
+  const addCategory = async (data) => {
+    try {
+      const res = await api.createCategory(data);
+      if (res.success) {
+        await fetchAllData(true);
+        return { success: true, data: res.data };
+      }
+      return { success: false, message: res.message || 'Gagal membuat kategori' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const editCategory = async (id, name) => {
+    try {
+      const res = await api.updateCategory(id, name);
+      if (res.success) {
+        await fetchAllData(true);
+        return { success: true, data: res.data };
+      }
+      return { success: false, message: res.message || 'Gagal mengubah kategori' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  const removeCategory = async (id) => {
+    try {
+      const res = await api.deleteCategory(id);
+      if (res.success) {
+        await fetchAllData(true);
+        return { success: true };
+      }
+      return { success: false, message: res.message || 'Gagal menghapus kategori' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
   const updateUserProfile = async (data) => {
     try {
       setLoading(true);
@@ -389,6 +486,7 @@ export const useFinance = () => {
     budgets,
     goals,
     recurringTemplates,
+    categories,
     summary,
     categoryExpenses,
     cashflowTrend,
@@ -396,6 +494,9 @@ export const useFinance = () => {
     loading,
     error,
     isDemo,
+    isOffline,
+    isSyncing,
+    syncQueueLength,
     dashboardMode,
     changeDashboardMode,
     partnerInfo,
@@ -416,6 +517,9 @@ export const useFinance = () => {
     toggleRecurringActive,
     removeRecurringTemplate,
     triggerProcessRecurring,
-    updateUserProfile
+    updateUserProfile,
+    addCategory,
+    editCategory,
+    removeCategory
   };
 };

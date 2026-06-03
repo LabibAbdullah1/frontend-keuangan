@@ -23,11 +23,11 @@ const getToday = (offsetDays = 0) => {
 const initMockDB = () => {
   if (!localStorage.getItem('fe_transactions')) {
     const defaultTransactions = [
-      { id: 1, type: 'expense', amount: 150000, category: 'Makanan', date: getToday(0), note: 'Makan siang nasi padang bersama tim' },
+      { id: 1, type: 'expense', amount: 150000, category: 'Makanan & Minuman', date: getToday(0), note: 'Makan siang nasi padang bersama tim' },
       { id: 2, type: 'income', amount: 8500000, category: 'Gaji', date: getToday(1), note: 'Transfer gaji bulanan utama' },
       { id: 3, type: 'expense', amount: 450000, category: 'Transportasi', date: getToday(2), note: 'Servis rutin motor dan isi pertamax' },
-      { id: 4, type: 'expense', amount: 1200000, category: 'Hiburan', date: getToday(3), note: 'Beli tiket konser musik akhir pekan' },
-      { id: 5, type: 'expense', amount: 800000, category: 'Tagihan', date: getToday(4), note: 'Bayar tagihan listrik dan internet rumah' },
+      { id: 4, type: 'expense', amount: 1200000, category: 'Hiburan & Rekreasi', date: getToday(3), note: 'Beli tiket konser musik akhir pekan' },
+      { id: 5, type: 'expense', amount: 800000, category: 'Utilitas & Tagihan', date: getToday(4), note: 'Bayar tagihan listrik dan internet rumah' },
       { id: 6, type: 'income', amount: 1500000, category: 'Investasi', date: getToday(5), note: 'Keuntungan dividen reksa dana saham' },
       { id: 7, type: 'expense', amount: 300000, category: 'Kesehatan', date: getToday(6), note: 'Beli vitamin dan suplemen bulanan' }
     ];
@@ -36,10 +36,10 @@ const initMockDB = () => {
 
   if (!localStorage.getItem('fe_budgets')) {
     const defaultBudgets = [
-      { id: 1, category: 'Makanan', amount: 2000000, month: new Date().getMonth() + 1, year: new Date().getFullYear() },
+      { id: 1, category: 'Makanan & Minuman', amount: 2000000, month: new Date().getMonth() + 1, year: new Date().getFullYear() },
       { id: 2, category: 'Transportasi', amount: 1000000, month: new Date().getMonth() + 1, year: new Date().getFullYear() },
-      { id: 3, category: 'Hiburan', amount: 1500000, month: new Date().getMonth() + 1, year: new Date().getFullYear() },
-      { id: 4, category: 'Tagihan', amount: 1200000, month: new Date().getMonth() + 1, year: new Date().getFullYear() }
+      { id: 3, category: 'Hiburan & Rekreasi', amount: 1500000, month: new Date().getMonth() + 1, year: new Date().getFullYear() },
+      { id: 4, category: 'Utilitas & Tagihan', amount: 1200000, month: new Date().getMonth() + 1, year: new Date().getFullYear() }
     ];
     localStorage.setItem('fe_budgets', JSON.stringify(defaultBudgets));
   }
@@ -54,10 +54,37 @@ const initMockDB = () => {
 
   if (!localStorage.getItem('fe_recurring')) {
     const defaultRecurring = [
-      { id: 1, type: 'expense', amount: 500000, category: 'Tagihan', frequency: 'monthly', note: 'Bayar Wifi Rumah Indihome', next_due_date: getToday(0), is_active: true, created_at: new Date().toISOString() },
+      { id: 1, type: 'expense', amount: 500000, category: 'Utilitas & Tagihan', frequency: 'monthly', note: 'Bayar Wifi Rumah Indihome', next_due_date: getToday(0), is_active: true, created_at: new Date().toISOString() },
       { id: 2, type: 'income', amount: 8500000, category: 'Gaji', frequency: 'monthly', note: 'Gaji Bulanan Utama', next_due_date: getToday(5), is_active: true, created_at: new Date().toISOString() }
     ];
     localStorage.setItem('fe_recurring', JSON.stringify(defaultRecurring));
+  }
+
+  if (!localStorage.getItem('fe_categories')) {
+    const defaultCategories = [
+      // Income
+      { id: 1, user_id: null, type: 'income', name: 'Gaji' },
+      { id: 2, user_id: null, type: 'income', name: 'Bonus' },
+      { id: 3, user_id: null, type: 'income', name: 'Investasi' },
+      { id: 4, user_id: null, type: 'income', name: 'Deposito' },
+      { id: 5, user_id: null, type: 'income', name: 'Hibah/Hadiah' },
+      { id: 6, user_id: null, type: 'income', name: 'Penjualan' },
+      { id: 7, user_id: null, type: 'income', name: 'Lain-lain' },
+      // Expense
+      { id: 8, user_id: null, type: 'expense', name: 'Makanan & Minuman' },
+      { id: 9, user_id: null, type: 'expense', name: 'Belanja Harian' },
+      { id: 10, user_id: null, type: 'expense', name: 'Transportasi' },
+      { id: 11, user_id: null, type: 'expense', name: 'Utilitas & Tagihan' },
+      { id: 12, user_id: null, type: 'expense', name: 'Sewa Rumah & Kos' },
+      { id: 13, user_id: null, type: 'expense', name: 'Kesehatan' },
+      { id: 14, user_id: null, type: 'expense', name: 'Pendidikan' },
+      { id: 15, user_id: null, type: 'expense', name: 'Hiburan & Rekreasi' },
+      { id: 16, user_id: null, type: 'expense', name: 'Liburan' },
+      { id: 17, user_id: null, type: 'expense', name: 'Pajak & Asuransi' },
+      { id: 18, user_id: null, type: 'expense', name: 'Amal & Donasi' },
+      { id: 19, user_id: null, type: 'expense', name: 'Lain-lain' }
+    ];
+    localStorage.setItem('fe_categories', JSON.stringify(defaultCategories));
   }
 
   if (localStorage.getItem('fe_partnership') === null) {
@@ -88,6 +115,8 @@ const mockDB = {
   savePartnership: (p) => localStorage.setItem('fe_partnership', JSON.stringify(p)),
   getPartnershipInvites: () => JSON.parse(localStorage.getItem('fe_partnership_invites') || '[]'),
   savePartnershipInvites: (pIs) => localStorage.setItem('fe_partnership_invites', JSON.stringify(pIs)),
+  getCategories: () => JSON.parse(localStorage.getItem('fe_categories') || '[]'),
+  saveCategories: (cats) => localStorage.setItem('fe_categories', JSON.stringify(cats)),
 };
 
 // Detektor status API (digunakan untuk memicu banner mode demo di UI)
@@ -113,6 +142,9 @@ const request = async (path, options = {}) => {
       headers,
     });
   } catch (networkError) {
+    if (options.skipMock) {
+      throw networkError;
+    }
     // Hanya tangkap kesalahan koneksi jaringan (TypeError: Failed to fetch / server luring)
     console.warn(`[API Connection Failed] Route: ${path}. Mengalihkan ke Resilient Demo Mode.`, networkError.message);
     isDemoMode = true;
@@ -146,6 +178,9 @@ const request = async (path, options = {}) => {
               headers,
             });
           } catch (networkError) {
+            if (options.skipMock) {
+              throw networkError;
+            }
             console.warn(`[API Connection Failed] Route: ${path} (setelah refresh). Mengalihkan ke Resilient Demo Mode.`, networkError.message);
             isDemoMode = true;
             return handleMockRequest(path, options);
@@ -172,7 +207,44 @@ const request = async (path, options = {}) => {
   }
 
   isDemoMode = false;
-  return await response.json();
+  const jsonResult = await response.json();
+
+  const method = (options.method || 'GET').toUpperCase();
+  if (method === 'GET' && jsonResult && jsonResult.success && jsonResult.data) {
+    const cleanPath = path.split('?')[0];
+    if (cleanPath === '/transactions') {
+      localStorage.setItem('fe_transactions', JSON.stringify(jsonResult.data));
+    } else if (cleanPath === '/budgets') {
+      localStorage.setItem('fe_budgets', JSON.stringify(jsonResult.data));
+    } else if (cleanPath === '/goals') {
+      localStorage.setItem('fe_goals', JSON.stringify(jsonResult.data));
+    } else if (cleanPath === '/recurring') {
+      localStorage.setItem('fe_recurring', JSON.stringify(jsonResult.data));
+    } else if (cleanPath === '/categories') {
+      localStorage.setItem('fe_categories', JSON.stringify(jsonResult.data));
+    } else if (cleanPath === '/partnership/active') {
+      localStorage.setItem('fe_partnership', JSON.stringify(jsonResult.data));
+    } else if (cleanPath === '/partnership/invites') {
+      localStorage.setItem('fe_partnership_invites', JSON.stringify(jsonResult.data));
+    }
+  }
+
+  return jsonResult;
+};
+
+// Helper untuk mengantrekan aksi mutasi ketika offline
+const enqueueOfflineAction = (method, path, body, tempId = null) => {
+  const queue = JSON.parse(localStorage.getItem('fe_sync_queue') || '[]');
+  // Pastikan kita tidak menduplikasi aksi yang identik dalam waktu yang sama
+  queue.push({
+    id: Date.now() + Math.random(), // tambahkan random minor agar ID unik jika dipanggil cepat
+    method,
+    path,
+    body,
+    tempId
+  });
+  localStorage.setItem('fe_sync_queue', JSON.stringify(queue));
+  console.log(`[Offline Queue] Action queued: ${method} ${path}`, { body, tempId });
 };
 
 // Menangani request dalam mode demo (Mock)
@@ -231,6 +303,7 @@ const handleMockRequest = (path, options = {}) => {
       };
       originalTxs.unshift(newTx);
       mockDB.saveTransactions(originalTxs);
+      enqueueOfflineAction('POST', '/transactions', body, newTx.id);
       return { success: true, data: newTx };
     }
 
@@ -242,6 +315,7 @@ const handleMockRequest = (path, options = {}) => {
         const originalTxs = mockDB.getTransactions();
         const updated = originalTxs.filter(t => t.id !== idToDelete);
         mockDB.saveTransactions(updated);
+        enqueueOfflineAction('DELETE', `/transactions/${idToDelete}`, null);
         return { success: true, message: 'Transaksi berhasil dihapus' };
       }
     }
@@ -283,6 +357,7 @@ const handleMockRequest = (path, options = {}) => {
       };
       originalBudgets.push(newBudget);
       mockDB.saveBudgets(originalBudgets);
+      enqueueOfflineAction('POST', '/budgets', body, newBudget.id);
       return { success: true, data: newBudget };
     }
 
@@ -293,6 +368,7 @@ const handleMockRequest = (path, options = {}) => {
         const originalBudgets = mockDB.getBudgets();
         const updated = originalBudgets.filter(b => b.id !== idToDelete);
         mockDB.saveBudgets(updated);
+        enqueueOfflineAction('DELETE', `/budgets/${idToDelete}`, null);
         return { success: true, message: 'Anggaran berhasil dihapus' };
       }
     }
@@ -334,6 +410,7 @@ const handleMockRequest = (path, options = {}) => {
       };
       originalGoals.push(newGoal);
       mockDB.saveGoals(originalGoals);
+      enqueueOfflineAction('POST', '/goals', body, newGoal.id);
       return { success: true, data: newGoal };
     }
 
@@ -346,6 +423,7 @@ const handleMockRequest = (path, options = {}) => {
         if (index !== -1) {
           originalGoals[index] = { ...originalGoals[index], ...body };
           mockDB.saveGoals(originalGoals);
+          enqueueOfflineAction('PUT', `/goals/${idToUpdate}`, body);
           return { success: true, data: originalGoals[index] };
         }
       }
@@ -360,6 +438,7 @@ const handleMockRequest = (path, options = {}) => {
       if (index !== -1) {
         originalGoals[index].current_amount += parseFloat(body.amount);
         mockDB.saveGoals(originalGoals);
+        enqueueOfflineAction('POST', `/goals/${idToContribute}/contribute`, body);
         return { success: true, data: originalGoals[index] };
       }
     }
@@ -371,6 +450,7 @@ const handleMockRequest = (path, options = {}) => {
         const originalGoals = mockDB.getGoals();
         const updated = originalGoals.filter(g => g.id !== idToDelete);
         mockDB.saveGoals(updated);
+        enqueueOfflineAction('DELETE', `/goals/${idToDelete}`, null);
         return { success: true, message: 'Target tabungan berhasil dihapus' };
       }
     }
@@ -410,6 +490,7 @@ const handleMockRequest = (path, options = {}) => {
       };
       originalRecurring.push(newRec);
       mockDB.saveRecurring(originalRecurring);
+      enqueueOfflineAction('POST', '/recurring', body, newRec.id);
       return { success: true, message: 'Templat transaksi berulang berhasil didaftarkan.', data: newRec };
     }
 
@@ -421,6 +502,7 @@ const handleMockRequest = (path, options = {}) => {
       if (index !== -1) {
         originalRecurring[index].is_active = body.is_active;
         mockDB.saveRecurring(originalRecurring);
+        enqueueOfflineAction(options.method || 'PATCH', `/recurring/${idToToggle}/toggle`, body);
         return { success: true, message: 'Status berhasil diubah.', data: originalRecurring[index] };
       }
     }
@@ -432,6 +514,7 @@ const handleMockRequest = (path, options = {}) => {
         const originalRecurring = mockDB.getRecurring();
         const updated = originalRecurring.filter(r => r.id !== idToDelete);
         mockDB.saveRecurring(updated);
+        enqueueOfflineAction('DELETE', `/recurring/${idToDelete}`, null);
         return { success: true, message: 'Templat berhasil dihapus' };
       }
     }
@@ -485,6 +568,8 @@ const handleMockRequest = (path, options = {}) => {
       mockDB.saveRecurring(updatedRecurring);
       mockDB.saveTransactions(txs);
     }
+
+    enqueueOfflineAction('POST', '/cron/process-recurring', null);
 
     return {
       success: true,
@@ -624,6 +709,8 @@ const handleMockRequest = (path, options = {}) => {
       // Dispatch event agar App.jsx tahu ada perubahan
       window.dispatchEvent(new Event('auth-change'));
 
+      enqueueOfflineAction('PUT', '/users/profile', body);
+
       return {
         success: true,
         message: 'Profil Anda berhasil diperbarui (Mode Demo).',
@@ -667,6 +754,8 @@ const handleMockRequest = (path, options = {}) => {
 
         const inviteeName = partnerIdentifier.split('@')[0];
 
+        enqueueOfflineAction('POST', '/partnership/invite', body);
+
         return {
           success: true,
           message: `Undangan kemitraan berhasil dikirim ke '${inviteeName}'.`,
@@ -692,6 +781,8 @@ const handleMockRequest = (path, options = {}) => {
         };
         mockDB.savePartnership(newPartner);
 
+        enqueueOfflineAction('PUT', `/partnership/accept/${inviteId}`, null);
+
         return {
           success: true,
           message: 'Selamat! Anda kini telah terhubung sebagai pasangan. Dashboard gabungan siap digunakan.'
@@ -706,6 +797,8 @@ const handleMockRequest = (path, options = {}) => {
 
         const updatedInvites = invites.filter(inv => inv.id !== inviteId);
         mockDB.savePartnershipInvites(updatedInvites);
+
+        enqueueOfflineAction('PUT', `/partnership/reject/${inviteId}`, null);
 
         return {
           success: true,
@@ -723,10 +816,452 @@ const handleMockRequest = (path, options = {}) => {
         ];
         mockDB.savePartnershipInvites(defaultInvites);
 
+        enqueueOfflineAction('DELETE', '/partnership/disconnect', null);
+
         return {
           success: true,
           message: 'Hubungan kemitraan berhasil diputuskan. Anda kembali ke mode mandiri.'
         };
+      }
+    }
+  }
+
+  // 9. RUTE KALKULATOR
+  if (path.startsWith('/calculators/budget-allocation')) {
+    if (method === 'POST') {
+      const needs = parseFloat((body.monthly_income * 0.50).toFixed(2));
+      const wants = parseFloat((body.monthly_income * 0.30).toFixed(2));
+      const savings = parseFloat((body.monthly_income * 0.20).toFixed(2));
+      return {
+        success: true,
+        data: {
+          monthly_income: body.monthly_income,
+          allocations: {
+            needs: { percentage: 50, amount: needs, description: 'Kebutuhan Pokok (Sewa rumah/kos, tagihan air/listrik, belanja dapur harian, transportasi, dan cicilan utang wajib).' },
+            wants: { percentage: 30, amount: wants, description: 'Keinginan Pribadi (Makan di luar/kafe, hiburan/streaming, hobi, belanja baju, dan liburan).' },
+            savings: { percentage: 20, amount: savings, description: 'Tabungan & Investasi (Dana darurat, investasi reksadana/emas/saham, tabungan berjangka, dan pelunasan utang ekstra).' }
+          },
+          tips: [
+            'Prioritaskan pemotongan porsi Tabungan (20%) secara otomatis begitu Anda menerima gaji (Auto-debet/Pay yourself first).',
+            'Gunakan porsi 50% Kebutuhan Pokok untuk menjaga kebutuhan dasar hidup Anda tetap memenuhi kebutuhan primer.',
+            'Jika alokasi Keinginan (30%) bersisa di akhir bulan, alihkan sisanya langsung ke rekening Tabungan atau Dana Darurat.'
+          ]
+        }
+      };
+    }
+  }
+
+  if (path.startsWith('/calculators/savings-simulator')) {
+    if (method === 'POST') {
+      const { target_amount, current_amount = 0, duration_months, monthly_contribution, annual_interest_rate = 0 } = body;
+      const monthlyInterestRate = (annual_interest_rate / 12) / 100;
+      const remainingTarget = target_amount - current_amount;
+
+      if (remainingTarget <= 0) {
+        return {
+          success: true,
+          data: {
+            target_amount, current_amount, duration_months: 0, monthly_contribution: 0, annual_interest_rate,
+            total_interest_earned: 0, total_principal: current_amount, total_accumulated: current_amount,
+            projection_schedule: []
+          }
+        };
+      }
+
+      let calculatedMonthlyContribution = monthly_contribution || 0;
+      let calculatedDuration = duration_months || 0;
+
+      if (duration_months && !monthly_contribution) {
+        if (monthlyInterestRate === 0) {
+          calculatedMonthlyContribution = remainingTarget / duration_months;
+        } else {
+          const fvCurrent = current_amount * Math.pow(1 + monthlyInterestRate, duration_months);
+          if (fvCurrent >= target_amount) {
+            calculatedMonthlyContribution = 0;
+          } else {
+            const remainingFv = target_amount - fvCurrent;
+            const annuityFactor = (Math.pow(1 + monthlyInterestRate, duration_months) - 1) / monthlyInterestRate;
+            calculatedMonthlyContribution = remainingFv / annuityFactor;
+          }
+        }
+        calculatedMonthlyContribution = parseFloat(calculatedMonthlyContribution.toFixed(2));
+      }
+
+      let currentBalance = current_amount;
+      let totalInterest = 0;
+      let totalPrincipal = current_amount;
+      let month = 0;
+      const pmt = calculatedMonthlyContribution;
+      const maxMonths = duration_months || 600;
+      let schedule = [];
+
+      while (currentBalance < target_amount && month < maxMonths) {
+        month++;
+        const interest = currentBalance * monthlyInterestRate;
+        totalInterest += interest;
+        totalPrincipal += pmt;
+        currentBalance = currentBalance + interest + pmt;
+
+        if (month <= 120) {
+          schedule.push({
+            month,
+            principal_saved: parseFloat(totalPrincipal.toFixed(2)),
+            interest_earned: parseFloat(totalInterest.toFixed(2)),
+            balance: parseFloat(currentBalance.toFixed(2))
+          });
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          target_amount: parseFloat(target_amount.toFixed(2)),
+          current_amount: parseFloat(current_amount.toFixed(2)),
+          duration_months: duration_months || month,
+          monthly_contribution: calculatedMonthlyContribution,
+          annual_interest_rate,
+          total_interest_earned: parseFloat(totalInterest.toFixed(2)),
+          total_principal: parseFloat(totalPrincipal.toFixed(2)),
+          total_accumulated: parseFloat(currentBalance.toFixed(2)),
+          projection_schedule: schedule
+        }
+      };
+    }
+  }
+
+  if (path.startsWith('/calculators/emergency-fund')) {
+    if (method === 'POST') {
+      const { monthly_expense, marital_status = 'single', dependents_count = 0, include_partner = false } = body;
+      
+      let finalMonthlyExpense = monthly_expense;
+      let source = 'manual_input';
+
+      if (!finalMonthlyExpense) {
+        const txs = getMockTxs();
+        const expense = txs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        finalMonthlyExpense = parseFloat((expense / 3).toFixed(2)) || 2500000;
+        source = 'database_average_90_days';
+      }
+
+      let multiplier = marital_status === 'married' ? 9 : 6;
+      multiplier += dependents_count;
+      if (multiplier > 12) multiplier = 12;
+
+      const targetEmergencyFund = parseFloat((finalMonthlyExpense * multiplier).toFixed(2));
+      let currentSavings = 0;
+      let emergencyGoalName = null;
+
+      const goals = mockDB.getGoals();
+      const emergencyGoal = goals.find(g =>
+        g.name.toLowerCase().includes('darurat') ||
+        g.name.toLowerCase().includes('emergency')
+      );
+
+      if (emergencyGoal) {
+        currentSavings = emergencyGoal.current_amount;
+        emergencyGoalName = emergencyGoal.name;
+      }
+
+      const remainingToTarget = Math.max(0, targetEmergencyFund - currentSavings);
+      const progressPercentage = targetEmergencyFund > 0
+        ? parseFloat(((currentSavings / targetEmergencyFund) * 100).toFixed(2))
+        : 0;
+
+      return {
+        success: true,
+        data: {
+          calculated_monthly_expense: finalMonthlyExpense,
+          source, marital_status, dependents_count, multiplier,
+          target_emergency_fund: targetEmergencyFund,
+          current_savings: currentSavings,
+          emergency_goal_name: emergencyGoalName,
+          remaining_to_target: parseFloat(remainingToTarget.toFixed(2)),
+          progress_percentage: progressPercentage,
+          partner_included: hasActivePartner && include_partner,
+          recommendations: [
+            `Berdasarkan status Anda, disarankan memiliki dana darurat sebesar ${multiplier} kali pengeluaran bulanan.`,
+            `Dana darurat sebaiknya disimpan di tempat yang sangat likuid dan bebas risiko (seperti tabungan bank konvensional atau Reksadana Pasar Uang).`,
+            `Fokus mengumpulkan dana darurat ini terlebih dahulu sebelum Anda melakukan investasi agresif di instrumen berisiko tinggi.`
+          ]
+        }
+      };
+    }
+  }
+
+  if (path.startsWith('/calculators/debt-payoff')) {
+    if (method === 'POST') {
+      const { debts, extra_monthly_payment = 0 } = body;
+
+      const simulate = (strategyType) => {
+        let debtsListCopy = debts.map(d => ({
+          name: d.name,
+          balance: d.balance,
+          interest_rate: d.interest_rate,
+          minimum_payment: d.minimum_payment,
+          total_paid: 0,
+          total_interest: 0
+        }));
+
+        let months = 0;
+        let totalInterestPaid = 0;
+        let payoffOrder = [];
+        let timeline = [];
+
+        while (debtsListCopy.some(d => d.balance > 0) && months < 360) {
+          months++;
+          let activeDebts = debtsListCopy.filter(d => d.balance > 0);
+
+          if (strategyType === 'snowball') {
+            activeDebts.sort((a, b) => a.balance - b.balance);
+          } else {
+            activeDebts.sort((a, b) => b.interest_rate - a.interest_rate);
+          }
+
+          for (let d of debtsListCopy) {
+            if (d.balance > 0) {
+              const monthlyInterest = d.balance * (d.interest_rate / 100 / 12);
+              d.balance += monthlyInterest;
+              d.total_interest += monthlyInterest;
+              totalInterestPaid += monthlyInterest;
+            }
+          }
+
+          const sumActiveMinimums = activeDebts.reduce((sum, d) => sum + d.minimum_payment, 0);
+          let availableBudget = sumActiveMinimums + extra_monthly_payment;
+          let paymentsThisMonth = {};
+
+          for (let d of activeDebts) {
+            const payment = Math.min(d.balance, d.minimum_payment);
+            d.balance -= payment;
+            d.total_paid += payment;
+            availableBudget -= payment;
+            paymentsThisMonth[d.name] = payment;
+
+            if (d.balance === 0 && !payoffOrder.includes(d.name)) {
+              payoffOrder.push(d.name);
+            }
+          }
+
+          if (availableBudget > 0) {
+            for (let d of activeDebts) {
+              if (d.balance > 0) {
+                const extraPay = Math.min(d.balance, availableBudget);
+                d.balance -= extraPay;
+                d.total_paid += extraPay;
+                availableBudget -= extraPay;
+                paymentsThisMonth[d.name] = (paymentsThisMonth[d.name] || 0) + extraPay;
+
+                if (d.balance === 0 && !payoffOrder.includes(d.name)) {
+                  payoffOrder.push(d.name);
+                }
+                if (availableBudget <= 0) break;
+              }
+            }
+          }
+
+          const monthlyTotalPaid = Object.values(paymentsThisMonth).reduce((a, b) => a + b, 0);
+          if (months <= 60) {
+            timeline.push({
+              month: months,
+              remaining_debts: debtsListCopy.map(d => ({ name: d.name, balance: parseFloat(d.balance.toFixed(2)) })),
+              amount_paid: parseFloat(monthlyTotalPaid.toFixed(2))
+            });
+          }
+        }
+
+        return {
+          strategy: strategyType,
+          months_to_payoff: months,
+          total_interest_paid: parseFloat(totalInterestPaid.toFixed(2)),
+          payoff_order: payoffOrder,
+          timeline
+        };
+      };
+
+      const snowballResult = simulate('snowball');
+      const avalancheResult = simulate('avalanche');
+
+      const interestSaved = parseFloat((snowballResult.total_interest_paid - avalancheResult.total_interest_paid).toFixed(2));
+      const monthsSaved = snowballResult.months_to_payoff - avalancheResult.months_to_payoff;
+
+      let recommendation = 'Metode Debt Avalanche direkomendasikan karena menghemat biaya bunga paling banyak.';
+      if (interestSaved === 0) {
+        recommendation = 'Kedua metode menghasilkan biaya bunga yang sama. Metode Debt Snowball direkomendasikan untuk motivasi psikologis yang lebih cepat.';
+      }
+
+      return {
+        success: true,
+        data: {
+          extra_monthly_payment,
+          strategies: {
+            snowball: snowballResult,
+            avalanche: avalancheResult
+          },
+          comparison: {
+            interest_saved_by_avalanche: Math.max(0, interestSaved),
+            months_saved_by_avalanche: Math.max(0, monthsSaved),
+            recommendation
+          }
+        }
+      };
+    }
+  }
+
+  // 10. RUTE KATEGORI (CATEGORIES)
+  if (path.startsWith('/categories')) {
+    let categories = mockDB.getCategories();
+
+    if (method === 'GET') {
+      const urlObj = new URL(path, 'http://localhost');
+      const typeParam = urlObj.searchParams.get('type');
+      let result = categories;
+      if (typeParam) {
+        result = categories.filter(c => c.type === typeParam);
+      }
+      return { success: true, data: result };
+    }
+
+    if (method === 'POST') {
+      const name = body.name.trim();
+      const type = body.type;
+
+      // Cek apakah ada kategori dengan nama & tipe yang sama (case-insensitive)
+      const duplicate = categories.some(c => c.type === type && c.name.toLowerCase() === name.toLowerCase());
+      if (duplicate) {
+        return { success: false, message: `Kategori "${name}" untuk tipe "${type}" sudah terdaftar.` };
+      }
+
+      const newCategory = {
+        id: Date.now(),
+        user_id: _user?.id || 1,
+        type,
+        name
+      };
+
+      categories.push(newCategory);
+      mockDB.saveCategories(categories);
+      enqueueOfflineAction('POST', '/categories', body, newCategory.id);
+      return { success: true, data: newCategory };
+    }
+
+    if (method === 'PUT') {
+      const match = path.match(/\/categories\/(\d+)/);
+      if (match) {
+        const idToUpdate = parseInt(match[1]);
+        const newName = body.name.trim();
+        
+        const catIndex = categories.findIndex(c => c.id === idToUpdate && c.user_id !== null);
+        if (catIndex === -1) {
+          return { success: false, message: 'Kategori tidak ditemukan atau merupakan kategori bawaan.' };
+        }
+
+        const category = categories[catIndex];
+        const oldName = category.name;
+        const type = category.type;
+
+        // Cek duplikasi nama baru
+        const duplicate = categories.some(c => c.id !== idToUpdate && c.type === type && c.name.toLowerCase() === newName.toLowerCase());
+        if (duplicate) {
+          return { success: false, message: `Kategori "${newName}" untuk tipe "${type}" sudah terdaftar.` };
+        }
+
+        // Update kategori
+        categories[catIndex].name = newName;
+        mockDB.saveCategories(categories);
+
+        // Cascade rename to transactions
+        const txs = mockDB.getTransactions();
+        txs.forEach(t => {
+          if (t.category === oldName && t.type === type) {
+            t.category = newName;
+          }
+        });
+        mockDB.saveTransactions(txs);
+
+        // Cascade rename to budgets
+        if (type === 'expense') {
+          const budgets = mockDB.getBudgets();
+          budgets.forEach(b => {
+            if (b.category === oldName) {
+              b.category = newName;
+            }
+          });
+          mockDB.saveBudgets(budgets);
+        }
+
+        // Cascade rename to recurring templates
+        const recurring = mockDB.getRecurring();
+        recurring.forEach(r => {
+          if (r.category === oldName && r.type === type) {
+            r.category = newName;
+          }
+        });
+        mockDB.saveRecurring(recurring);
+
+        enqueueOfflineAction('PUT', `/categories/${idToUpdate}`, body);
+
+        return {
+          success: true,
+          data: {
+            id: idToUpdate,
+            user_id: _user?.id || 1,
+            type,
+            old_name: oldName,
+            new_name: newName
+          }
+        };
+      }
+    }
+
+    if (method === 'DELETE') {
+      const match = path.match(/\/categories\/(\d+)/);
+      if (match) {
+        const idToDelete = parseInt(match[1]);
+        const catIndex = categories.findIndex(c => c.id === idToDelete && c.user_id !== null);
+        if (catIndex === -1) {
+          return { success: false, message: 'Kategori tidak ditemukan atau merupakan kategori bawaan.' };
+        }
+
+        const category = categories[catIndex];
+        const oldName = category.name;
+        const type = category.type;
+
+        // Hapus kategori
+        categories.splice(catIndex, 1);
+        mockDB.saveCategories(categories);
+
+        // Cascade delete to 'Lain-lain' in transactions
+        const txs = mockDB.getTransactions();
+        txs.forEach(t => {
+          if (t.category === oldName && t.type === type) {
+            t.category = 'Lain-lain';
+          }
+        });
+        mockDB.saveTransactions(txs);
+
+        // Cascade delete to 'Lain-lain' in budgets
+        if (type === 'expense') {
+          const budgets = mockDB.getBudgets();
+          budgets.forEach(b => {
+            if (b.category === oldName) {
+              b.category = 'Lain-lain';
+            }
+          });
+          mockDB.saveBudgets(budgets);
+        }
+
+        // Cascade delete to 'Lain-lain' in recurring templates
+        const recurring = mockDB.getRecurring();
+        recurring.forEach(r => {
+          if (r.category === oldName && r.type === type) {
+            r.category = 'Lain-lain';
+          }
+        });
+        mockDB.saveRecurring(recurring);
+
+        enqueueOfflineAction('DELETE', `/categories/${idToDelete}`, null);
+
+        return { success: true, message: 'Kategori kustom berhasil dihapus.' };
       }
     }
   }
@@ -846,6 +1381,12 @@ export const api = {
   createBudget: (data) => request('/budgets', { method: 'POST', body: JSON.stringify(data) }),
   deleteBudget: (id) => request(`/budgets/${id}`, { method: 'DELETE' }),
 
+  // Kategori (Categories)
+  getCategories: (type) => request(`/categories${type ? `?type=${type}` : ''}`),
+  createCategory: (data) => request('/categories', { method: 'POST', body: JSON.stringify(data) }),
+  updateCategory: (id, name) => request(`/categories/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }),
+  deleteCategory: (id) => request(`/categories/${id}`, { method: 'DELETE' }),
+
   // Goals
   getGoals: (mode) => request(`/goals${mode ? `?mode=${mode}` : ''}`),
   getGoal: (id, mode) => request(`/goals/${id}${mode ? `?mode=${mode}` : ''}`),
@@ -896,5 +1437,117 @@ export const api = {
   acceptInvite: (id) => request(`/partnership/accept/${id}`, { method: 'PUT' }),
   rejectInvite: (id) => request(`/partnership/reject/${id}`, { method: 'PUT' }),
   getActivePartner: () => request('/partnership/active'),
-  disconnect: () => request('/partnership/disconnect', { method: 'DELETE' })
+  disconnect: () => request('/partnership/disconnect', { method: 'DELETE' }),
+
+  // Kalkulator Keuangan
+  getBudgetAllocation: (monthly_income) => request('/calculators/budget-allocation', { method: 'POST', body: JSON.stringify({ monthly_income }) }),
+  getSavingsProjection: (data) => request('/calculators/savings-simulator', { method: 'POST', body: JSON.stringify(data) }),
+  getEmergencyFundRecommendation: (data) => request('/calculators/emergency-fund', { method: 'POST', body: JSON.stringify(data) }),
+  getDebtPayoffStrategy: (data) => request('/calculators/debt-payoff', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Memproses antrean sinkronisasi ketika online kembali
+  syncOfflineData: async () => {
+    if (!navigator.onLine) return { success: false, message: 'Tidak ada koneksi internet' };
+    
+    let queue = JSON.parse(localStorage.getItem('fe_sync_queue') || '[]');
+    if (queue.length === 0) return { success: true, message: 'Antrean sinkronisasi kosong' };
+
+    console.log(`[Sync] Memulai sinkronisasi ${queue.length} item...`);
+    
+    const idMap = JSON.parse(localStorage.getItem('fe_sync_id_map') || '{}');
+    
+    // Ambil data lokal untuk melakukan pembaruan ID lokal
+    let transactions = JSON.parse(localStorage.getItem('fe_transactions') || '[]');
+    let budgets = JSON.parse(localStorage.getItem('fe_budgets') || '[]');
+    let goals = JSON.parse(localStorage.getItem('fe_goals') || '[]');
+    let recurring = JSON.parse(localStorage.getItem('fe_recurring') || '[]');
+    let categories = JSON.parse(localStorage.getItem('fe_categories') || '[]');
+
+    let processedCount = 0;
+    
+    // Menggunakan perulangan for...of agar proses sinkronisasi FIFO sinkron (berurutan)
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      
+      // 1. Resolve path dengan mengganti tempId -> realId
+      let resolvedPath = item.path;
+      Object.entries(idMap).forEach(([tempId, realId]) => {
+        resolvedPath = resolvedPath.replace(new RegExp(`/${tempId}\\b`, 'g'), `/${realId}`);
+      });
+
+      // 2. Resolve body jika ada tempId
+      let resolvedBody = item.body;
+      if (item.body) {
+        let bodyStr = JSON.stringify(item.body);
+        Object.entries(idMap).forEach(([tempId, realId]) => {
+          bodyStr = bodyStr.replace(new RegExp(`\\b${tempId}\\b`, 'g'), realId);
+        });
+        resolvedBody = JSON.parse(bodyStr);
+      }
+
+      try {
+        console.log(`[Sync] Mengirim: ${item.method} ${resolvedPath}`, resolvedBody);
+        
+        const response = await request(resolvedPath, {
+          method: item.method,
+          body: resolvedBody ? JSON.stringify(resolvedBody) : undefined,
+          skipMock: true // Paksa request gagal jika koneksi putus
+        });
+
+        processedCount++;
+
+        // Jika operasi adalah POST (Pembuatan Baru) dan mengembalikan data dengan ID server
+        if (item.method === 'POST' && item.tempId && response && response.success && response.data) {
+          const serverId = response.data.id;
+          const tempId = item.tempId;
+          idMap[tempId] = serverId;
+
+          // Cari tipe model dari path
+          if (item.path.startsWith('/transactions')) {
+            transactions = transactions.map(t => t.id === tempId ? { ...t, id: serverId } : t);
+          } else if (item.path.startsWith('/budgets')) {
+            budgets = budgets.map(b => b.id === tempId ? { ...b, id: serverId } : b);
+          } else if (item.path.startsWith('/goals')) {
+            goals = goals.map(g => g.id === tempId ? { ...g, id: serverId } : g);
+          } else if (item.path.startsWith('/recurring')) {
+            recurring = recurring.map(r => r.id === tempId ? { ...r, id: serverId } : r);
+          } else if (item.path.startsWith('/categories')) {
+            categories = categories.map(c => c.id === tempId ? { ...c, id: serverId } : c);
+          }
+        }
+        
+        // Update antrean luring setelah berhasil mengirim satu item
+        const updatedQueue = queue.slice(processedCount);
+        localStorage.setItem('fe_sync_queue', JSON.stringify(updatedQueue));
+        localStorage.setItem('fe_sync_id_map', JSON.stringify(idMap));
+
+        // Simpan data lokal yang ID-nya sudah dipetakan
+        localStorage.setItem('fe_transactions', JSON.stringify(transactions));
+        localStorage.setItem('fe_budgets', JSON.stringify(budgets));
+        localStorage.setItem('fe_goals', JSON.stringify(goals));
+        localStorage.setItem('fe_recurring', JSON.stringify(recurring));
+        localStorage.setItem('fe_categories', JSON.stringify(categories));
+
+      } catch (error) {
+        console.error(`[Sync Failed] Gagal memproses ${item.method} ${resolvedPath}:`, error.message);
+        
+        // Jika errornya karena masalah koneksi jaringan (TypeError: Failed to fetch)
+        // Kita batalkan perulangan sync agar item sisa dicoba lagi nanti saat koneksi stabil
+        if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('network') || error.message.includes('HTTP error! status: 504') || error.message.includes('HTTP error! status: 503'))) {
+          throw new Error('Koneksi terputus saat sinkronisasi. Sisa data akan disinkronkan nanti.');
+        }
+        
+        // Jika error validasi atau data rusak dari client (400 Bad Request, dll.),
+        // kita lewati item tersebut agar antrean tidak macet selamanya
+        console.warn(`[Sync Skipped] Melewati aksi yang rusak karena error API permanen.`);
+        const updatedQueue = queue.slice(processedCount);
+        localStorage.setItem('fe_sync_queue', JSON.stringify(updatedQueue));
+      }
+    }
+
+    // Bersihkan ID Map setelah selesai sinkronisasi seluruhnya
+    localStorage.removeItem('fe_sync_id_map');
+    console.log(`[Sync] Selesai! Berhasil menyinkronkan ${processedCount} aksi.`);
+    return { success: true, processedCount };
+  }
 };

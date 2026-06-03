@@ -10,6 +10,8 @@ import TransactionList from './components/dashboard/TransactionList';
 import TransactionModal from './components/dashboard/TransactionModal';
 import RecurringSection from './components/dashboard/RecurringSection';
 import ProfileSection from './components/dashboard/ProfileSection';
+import CalculatorSection from './components/dashboard/CalculatorSection';
+import CategorySection from './components/dashboard/CategorySection';
 import Auth from './components/auth/Auth';
 
 import {
@@ -24,7 +26,8 @@ import {
   Sparkles,
   LogOut,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Menu
 } from 'lucide-react';
 import { formatRupiah } from './utils/format';
 
@@ -45,6 +48,9 @@ export default function App() {
     loading,
     error,
     isDemo,
+    isOffline,
+    isSyncing,
+    syncQueueLength,
     dashboardMode,
     changeDashboardMode,
     partnerInfo,
@@ -61,14 +67,19 @@ export default function App() {
     contributeGoal,
     removeGoal,
     recurringTemplates,
+    categories,
     addRecurringTemplate,
     toggleRecurringActive,
     removeRecurringTemplate,
     triggerProcessRecurring,
-    updateUserProfile
+    updateUserProfile,
+    addCategory,
+    editCategory,
+    removeCategory
   } = useFinance();
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [transactionSubTab, setTransactionSubTab] = useState('history'); // 'history' or 'recurring'
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -192,25 +203,72 @@ export default function App() {
         dashboardMode={dashboardMode}
         changeDashboardMode={changeDashboardMode}
         partnerInfo={partnerInfo}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
 
       {/* 2. MAIN APP CONTENT CONTAINER */}
       <div className="flex-1 flex flex-col min-h-screen lg:pl-64">
         <main className="flex-1 flex flex-col pb-28 lg:pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
 
-        {/* BANNER DEMO MODE RESILIEN (Muncul jika database/API luring) */}
-        {isDemo && (
-          <div className="mt-4 p-3 rounded-2xl bg-amber-50 border border-amber-200/60 text-amber-800 text-xs flex items-center justify-between gap-3 shadow-sm shadow-amber-500/5 animate-fade-in select-none">
+        {/* BANNER STATUS KONEKSI & SINKRONISASI */}
+        {(isOffline || isDemo || isSyncing || syncQueueLength > 0) && (
+          <div className={`mt-4 p-3 rounded-2xl border text-xs flex items-center justify-between gap-3 shadow-sm select-none animate-fade-in ${
+            isSyncing 
+              ? 'bg-blue-50 border-blue-200/60 text-blue-800 shadow-blue-500/5' 
+              : (isOffline || isDemo) 
+                ? 'bg-amber-50 border-amber-200/60 text-amber-800 shadow-amber-500/5'
+                : 'bg-emerald-50 border-emerald-200/60 text-emerald-800 shadow-emerald-500/5'
+          }`}>
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
-                <WifiOff size={14} />
+              <div className={`w-7 h-7 rounded-lg text-white flex items-center justify-center shrink-0 ${
+                isSyncing 
+                  ? 'bg-blue-600' 
+                  : (isOffline || isDemo) 
+                    ? 'bg-amber-500' 
+                    : 'bg-emerald-500'
+              }`}>
+                {isSyncing ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (isOffline || isDemo) ? (
+                  <WifiOff size={14} />
+                ) : (
+                  <RefreshCw size={14} />
+                )}
               </div>
               <div>
-                <p className="font-bold">Mode Offline Aktif</p>
-                <p className="text-[10px] text-amber-600 font-medium mt-0.5">Database backend cPanel belum terhubung. Perubahan Anda disimpan sementara di memori browser (LocalStorage).</p>
+                <p className="font-bold">
+                  {isSyncing 
+                    ? 'Menyinkronkan Data...' 
+                    : (isOffline || isDemo) 
+                      ? 'Mode Offline Aktif' 
+                      : 'Data Tersinkronisasi'}
+                </p>
+                <p className={`text-[10px] font-medium mt-0.5 ${
+                  isSyncing 
+                    ? 'text-blue-600' 
+                    : (isOffline || isDemo) 
+                      ? 'text-amber-600' 
+                      : 'text-emerald-600'
+                }`}>
+                  {isSyncing 
+                    ? `Sedang mengunggah ${syncQueueLength} perubahan ke server pusat secara aman.` 
+                    : (isOffline || isDemo) 
+                      ? `Koneksi terputus. Anda tetap bisa menggunakan aplikasi. ${syncQueueLength > 0 ? `Ada ${syncQueueLength} perubahan tersimpan secara lokal dan akan disinkronkan saat online.` : 'Perubahan akan disimpan sementara di LocalStorage.'}`
+                      : 'Semua perubahan offline Anda telah berhasil disinkronkan ke server.'}
+                </p>
               </div>
             </div>
-            <span className="text-[9px] font-bold uppercase tracking-wider bg-white px-2 py-0.5 rounded-lg border border-amber-200 text-amber-700 shrink-0">Demo Live</span>
+            {syncQueueLength > 0 && !isSyncing && (
+              <span className="text-[9px] font-bold uppercase tracking-wider bg-white px-2 py-0.5 rounded-lg border border-amber-200 text-amber-700 shrink-0">
+                {syncQueueLength} Tertunda
+              </span>
+            )}
+            {isSyncing && (
+              <span className="text-[9px] font-bold uppercase tracking-wider bg-white px-2 py-0.5 rounded-lg border border-blue-200 text-blue-700 shrink-0 animate-pulse">
+                Proses
+              </span>
+            )}
           </div>
         )}
 
@@ -218,6 +276,14 @@ export default function App() {
         <header className="py-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 select-none">
           <div className="space-y-1">
             <span className="text-[10px] font-bold text-blue-600 tracking-widest uppercase flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-600 active:scale-95 transition-all mr-1.5 shrink-0 bg-slate-50 border border-slate-200/40 flex items-center justify-center"
+                title="Buka Menu"
+              >
+                <Menu size={12} className="stroke-[2.5]" />
+              </button>
               <Sparkles size={11} className="stroke-[2.5]" />
               {dashboardMode === 'couple' ? 'Couple Finance Hub 🧑‍🤝‍🧑' : 'Personal Finance Hub'}
             </span>
@@ -347,6 +413,7 @@ export default function App() {
                   transactions={transactions}
                   addBudget={addBudget}
                   removeBudget={handleRemoveBudget}
+                  categories={categories}
                 />
                 <GoalsSection
                   goals={goals}
@@ -422,6 +489,7 @@ export default function App() {
                     toggleRecurringActive={toggleRecurringActive}
                     removeRecurringTemplate={handleRemoveRecurringTemplate}
                     triggerProcessRecurring={triggerProcessRecurring}
+                    categories={categories}
                   />
                 </div>
               )}
@@ -435,6 +503,18 @@ export default function App() {
                 transactions={transactions}
                 addBudget={addBudget}
                 removeBudget={handleRemoveBudget}
+                categories={categories}
+              />
+            </div>
+          )}
+
+          {activeTab === 'categories' && (
+            <div className="animate-fade-in">
+              <CategorySection
+                categories={categories}
+                addCategory={addCategory}
+                editCategory={editCategory}
+                removeCategory={removeCategory}
               />
             </div>
           )}
@@ -447,6 +527,12 @@ export default function App() {
                 contributeGoal={contributeGoal}
                 removeGoal={handleRemoveGoal}
               />
+            </div>
+          )}
+
+          {activeTab === 'calculator' && (
+            <div className="animate-fade-in">
+              <CalculatorSection />
             </div>
           )}
 
@@ -481,6 +567,7 @@ export default function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         addTransaction={addTransaction}
+        categories={categories}
       />
 
       {/* 8. GLOBAL DELETE CONFIRMATION MODAL */}

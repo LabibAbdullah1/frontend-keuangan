@@ -18,8 +18,8 @@ import {
 } from 'lucide-react';
 import { formatRupiah, formatDate } from '../../utils/format';
 
-const INCOME_CATEGORIES = ['Gaji', 'Investasi', 'Freelance', 'Hadiah', 'Lain-lain'];
-const EXPENSE_CATEGORIES = ['Makanan', 'Transportasi', 'Hiburan', 'Tagihan', 'Kesehatan', 'Pendidikan', 'Belanja', 'Lain-lain'];
+const INCOME_FALLBACK = ['Gaji', 'Bonus', 'Investasi', 'Deposito', 'Hibah/Hadiah', 'Penjualan', 'Lain-lain'];
+const EXPENSE_FALLBACK = ['Makanan & Minuman', 'Belanja Harian', 'Transportasi', 'Utilitas & Tagihan', 'Sewa Rumah & Kos', 'Kesehatan', 'Pendidikan', 'Hiburan & Rekreasi', 'Liburan', 'Pajak & Asuransi', 'Amal & Donasi', 'Lain-lain'];
 
 const FREQUENCIES = [
   { value: 'daily', label: 'Harian' },
@@ -46,11 +46,12 @@ export default function RecurringSection({
   addRecurringTemplate, 
   toggleRecurringActive, 
   removeRecurringTemplate, 
-  triggerProcessRecurring 
+  triggerProcessRecurring,
+  categories = []
 }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [type, setType] = useState('expense');
-  const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
+  const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [frequency, setFrequency] = useState('monthly');
   const [note, setNote] = useState('');
@@ -70,10 +71,17 @@ export default function RecurringSection({
   const [cronLoading, setCronLoading] = useState(false);
   const [cronMessage, setCronMessage] = useState(null);
 
-  // Set default kategori saat tipe berubah
+  // Helper to get active categories list
+  const getCategoriesList = () => {
+    const list = categories.filter(c => c.type === type).map(c => c.name);
+    return list.length > 0 ? list : (type === 'income' ? INCOME_FALLBACK : EXPENSE_FALLBACK);
+  };
+
+  // Set default kategori saat tipe atau list kategori berubah
   useEffect(() => {
-    setCategory(type === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0]);
-  }, [type]);
+    const list = getCategoriesList();
+    setCategory(list[0] || 'Lain-lain');
+  }, [type, categories]);
 
   // Tutup dropdown/kalender saat mengklik luar
   useEffect(() => {
@@ -150,7 +158,9 @@ export default function RecurringSection({
   const handleToggleAddForm = () => {
     if (!showAddForm) {
       setType('expense');
-      setCategory(EXPENSE_CATEGORIES[0]);
+      const list = categories.filter(c => c.type === 'expense').map(c => c.name);
+      const fallbackList = list.length > 0 ? list : EXPENSE_FALLBACK;
+      setCategory(fallbackList[0] || 'Lain-lain');
       setAmount('');
       setFrequency('monthly');
       setNote('');
@@ -377,7 +387,7 @@ export default function RecurringSection({
 
                 {isDropdownOpen && (
                   <div className="absolute left-0 right-0 mt-1.5 z-50 bg-white border border-slate-100 shadow-xl rounded-xl py-1 text-xs select-none max-h-48 overflow-y-auto animate-fade-in">
-                    {(type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((cat) => {
+                    {getCategoriesList().map((cat) => {
                       const isSelected = category === cat;
                       return (
                         <div
