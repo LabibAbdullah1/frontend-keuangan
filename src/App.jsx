@@ -107,6 +107,35 @@ export default function App() {
     }
   }, [user]);
 
+  // Restore navigation tab states on load
+  React.useEffect(() => {
+    if (user?.id) {
+      const savedTab = localStorage.getItem(`active_tab_${user.id}`);
+      if (savedTab) {
+        setActiveTab(savedTab);
+      }
+      const savedSubTab = localStorage.getItem(`transaction_sub_tab_${user.id}`);
+      if (savedSubTab) {
+        setTransactionSubTab(savedSubTab);
+      }
+    }
+  }, [user]);
+
+  // Persist activeTab and reset window scroll to top
+  React.useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`active_tab_${user.id}`, activeTab);
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activeTab, user]);
+
+  // Persist transactionSubTab
+  React.useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`transaction_sub_tab_${user.id}`, transactionSubTab);
+    }
+  }, [transactionSubTab, user]);
+
   // Global Delete Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
