@@ -147,7 +147,7 @@ const request = async (path, options = {}) => {
     }
     // Hanya tangkap kesalahan koneksi jaringan (TypeError: Failed to fetch / server luring)
     console.warn(`[API Connection Failed] Route: ${path}. Mengalihkan ke Resilient Demo Mode.`, networkError.message);
-    isDemoMode = true;
+    isDemoMode = false;
     return handleMockRequest(path, options);
   }
 
