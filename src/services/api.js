@@ -614,6 +614,76 @@ const handleMockRequest = (path, options = {}) => {
     return { success: true, data: categoryData };
   }
 
+  if (path.startsWith('/analysis/budgets')) {
+    const txs = getMockTxs();
+    const budgets = mockDB.getBudgets();
+    const today = new Date();
+    const urlObj = new URL(path, 'http://localhost');
+    const month = urlObj.searchParams.get('month') ? parseInt(urlObj.searchParams.get('month'), 10) : today.getMonth() + 1;
+    const year = urlObj.searchParams.get('year') ? parseInt(urlObj.searchParams.get('year'), 10) : today.getFullYear();
+
+    const isCurrentMonth = (month === today.getMonth() + 1 && year === today.getFullYear());
+    const totalDaysInMonth = new Date(year, month, 0).getDate();
+    const daysPassed = isCurrentMonth ? today.getDate() : totalDaysInMonth;
+
+    const projections = budgets.map(budget => {
+      const totalSpent = txs
+        .filter(t => t.type === 'expense' && t.category.toLowerCase() === budget.category.toLowerCase())
+        .filter(t => {
+          const d = new Date(t.date);
+          return d.getMonth() === (month - 1) && d.getFullYear() === year;
+        })
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const remainingBudget = budget.amount - totalSpent;
+      const percentageSpent = budget.amount > 0 ? (totalSpent / budget.amount) * 100 : 0;
+      const dailyBurnRate = daysPassed > 0 ? totalSpent / daysPassed : 0;
+      const projectedSpending = isCurrentMonth ? dailyBurnRate * totalDaysInMonth : totalSpent;
+      const isOverspent = totalSpent > budget.amount;
+      const willOverspend = projectedSpending > budget.amount;
+
+      let status = 'ON_TRACK';
+      let estimatedExhaustionDay = null;
+
+      if (isOverspent) {
+        status = 'OVERSPENT';
+      } else if (willOverspend) {
+        status = 'HIGH_RISK';
+        if (dailyBurnRate > 0) {
+          estimatedExhaustionDay = Math.min(
+            totalDaysInMonth,
+            Math.max(1, Math.floor(budget.amount / dailyBurnRate))
+          );
+        }
+      }
+
+      return {
+        id: budget.id,
+        category: budget.category,
+        budget_limit: budget.amount,
+        total_spent: totalSpent,
+        remaining_budget: Math.max(0, remainingBudget),
+        percentage_spent: parseFloat(percentageSpent.toFixed(2)),
+        daily_burn_rate: parseFloat(dailyBurnRate.toFixed(2)),
+        projected_spending: parseFloat(projectedSpending.toFixed(2)),
+        status,
+        estimated_exhaustion_day: estimatedExhaustionDay,
+        is_current_month: isCurrentMonth
+      };
+    });
+
+    return {
+      success: true,
+      data: {
+        month,
+        year,
+        days_passed: daysPassed,
+        total_days: totalDaysInMonth,
+        projections
+      }
+    };
+  }
+
   if (path.startsWith('/analysis/cashflow-trend')) {
     const txs = getMockTxs();
 
@@ -1398,6 +1468,14 @@ export const api = {
   // Analisis
   getSummary: (mode) => request(`/analysis/summary${mode ? `?mode=${mode}` : ''}`),
   getCategoryExpenses: (mode) => request(`/analysis/category${mode ? `?mode=${mode}` : ''}`),
+  getBudgetForecasts: (month, year, mode) => {
+    const q = [];
+    if (month) q.push(`month=${month}`);
+    if (year) q.push(`year=${year}`);
+    if (mode) q.push(`mode=${mode}`);
+    const queryStr = q.length > 0 ? `?${q.join('&')}` : '';
+    return request(`/analysis/budgets${queryStr}`);
+  },
   getCashflowTrend: (mode) => request(`/analysis/cashflow-trend${mode ? `?mode=${mode}` : ''}`),
   getFinancialHealth: async (mode) => {
     const res = await request(`/analysis/health${mode ? `?mode=${mode}` : ''}`);

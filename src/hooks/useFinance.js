@@ -11,6 +11,7 @@ export const useFinance = () => {
   const [categoryExpenses, setCategoryExpenses] = useState([]);
   const [cashflowTrend, setCashflowTrend] = useState([]);
   const [financialHealth, setFinancialHealth] = useState({ health_score: 100, rating: 'Memuat...', recommendations: [] });
+  const [budgetForecasts, setBudgetForecasts] = useState({ month: new Date().getMonth() + 1, year: new Date().getFullYear(), projections: [] });
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,6 +52,7 @@ export const useFinance = () => {
       setCategoryExpenses([]);
       setCashflowTrend([]);
       setFinancialHealth({ health_score: 100, rating: 'Silakan Login', recommendations: [] });
+      setBudgetForecasts({ month: new Date().getMonth() + 1, year: new Date().getFullYear(), projections: [] });
       setPartnerInfo(null);
       setIncomingInvites([]);
       setLoading(false);
@@ -77,7 +79,8 @@ export const useFinance = () => {
         recurringRes,
         categoriesRes,
         partnerRes,
-        invitesRes
+        invitesRes,
+        forecastRes
       ] = await Promise.all([
         api.getTransactions(modeParam),
         api.getBudgets(modeParam),
@@ -89,7 +92,8 @@ export const useFinance = () => {
         api.getRecurringTemplates(modeParam),
         api.getCategories(),
         api.getActivePartner(),
-        api.getInvites()
+        api.getInvites(),
+        api.getBudgetForecasts(null, null, modeParam)
       ]);
 
       if (txRes.success) setTransactions(txRes.data);
@@ -101,6 +105,7 @@ export const useFinance = () => {
       if (healthRes.success) setFinancialHealth(healthRes.data);
       if (recurringRes.success) setRecurringTemplates(recurringRes.data);
       if (categoriesRes.success) setCategories(categoriesRes.data);
+      if (forecastRes && forecastRes.success) setBudgetForecasts(forecastRes.data);
       
       if (partnerRes.success) setPartnerInfo(partnerRes.data);
       if (invitesRes.success) setIncomingInvites(invitesRes.data);
@@ -491,6 +496,7 @@ export const useFinance = () => {
     categoryExpenses,
     cashflowTrend,
     financialHealth,
+    budgetForecasts,
     loading,
     error,
     isDemo,

@@ -22,7 +22,7 @@ const parseRawNumber = (val) => {
   return parseFloat(val.replace(/\./g, '')) || 0;
 };
 
-export default function BudgetsSection({ budgets, transactions, addBudget, removeBudget, categories = [] }) {
+export default function BudgetsSection({ budgets, transactions, addBudget, removeBudget, categories = [], budgetForecasts }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
@@ -223,19 +223,41 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
             const ratio = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
             const progress = Math.min(100, ratio);
             
+            // Temukan ramalan / proyeksi dari backend
+            const forecast = budgetForecasts?.projections?.find(
+              p => p.category.toLowerCase() === budget.category.toLowerCase()
+            );
+            
             // Tentukan warna progress bar & alarm
             let progressColor = 'bg-blue-500';
             let textColor = 'text-blue-600 bg-blue-50';
             let borderStatus = 'border-slate-100';
+            let statusBadge = null;
 
-            if (ratio >= 100) {
+            if (forecast?.status === 'OVERSPENT' || ratio >= 100) {
               progressColor = 'bg-rose-500';
               textColor = 'text-rose-600 bg-rose-50';
               borderStatus = 'border-rose-100 bg-rose-50/10';
-            } else if (ratio >= 75) {
+              statusBadge = (
+                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 uppercase tracking-tight">
+                  🚨 Jebol
+                </span>
+              );
+            } else if (forecast?.status === 'HIGH_RISK' || ratio >= 75) {
               progressColor = 'bg-amber-500';
               textColor = 'text-amber-600 bg-amber-50';
               borderStatus = 'border-amber-100 bg-amber-50/10';
+              statusBadge = (
+                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 uppercase tracking-tight">
+                  ⚠️ Risiko Tinggi
+                </span>
+              );
+            } else {
+              statusBadge = (
+                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 uppercase tracking-tight">
+                  ✓ Aman
+                </span>
+              );
             }
 
             return (
@@ -249,6 +271,7 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${textColor}`}>
                       {ratio.toFixed(0)}% Terpakai
                     </span>
+                    {statusBadge}
                   </div>
                   <div className="flex items-center gap-2 select-none">
                     <span className="text-slate-400 font-medium">Batas:</span>
@@ -263,19 +286,41 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
                 </div>
 
                 {/* Progress bar meter */}
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-1.5 relative">
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-2 relative">
                   <div 
                     className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
                     style={{ width: `${progress}%` }}
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+                <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium mb-1.5">
                   <span>Terpakai: <strong className="text-slate-700 font-semibold">{formatRupiah(spent)}</strong></span>
                   <span>Sisa: <strong className={ratio >= 100 ? 'text-rose-600 font-bold' : 'text-slate-700 font-semibold'}>
                     {ratio >= 100 ? 'Habis (Overspend)' : formatRupiah(budget.amount - spent)}
                   </strong></span>
                 </div>
+
+                {/* Informasi Proyeksi Tambahan dari Backend/AnalysisController */}
+                {forecast && (
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-col gap-1 text-[9px] text-slate-400 font-semibold">
+                    <div className="flex justify-between items-center">
+                      <span>Laju Pengeluaran Harian:</span>
+                      <span className="text-slate-600 font-bold">{formatRupiah(forecast.daily_burn_rate)} / hari</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Proyeksi Akhir Bulan:</span>
+                      <span className={`font-bold ${forecast.status === 'OVERSPENT' || forecast.status === 'HIGH_RISK' ? 'text-rose-600' : 'text-slate-600'}`}>
+                        {formatRupiah(forecast.projected_spending)}
+                      </span>
+                    </div>
+                    {forecast.status === 'HIGH_RISK' && forecast.estimated_exhaustion_day && (
+                      <div className="mt-1 p-1.5 bg-amber-50 rounded border border-amber-100 text-amber-700 flex items-center gap-1">
+                        <AlertTriangle size={10} className="shrink-0" />
+                        <span>Estimasi anggaran jebol pada hari ke-{forecast.estimated_exhaustion_day} (Tanggal {forecast.estimated_exhaustion_day})</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })

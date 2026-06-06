@@ -27,7 +27,8 @@ import {
   Sparkles,
   LogOut,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { formatRupiah } from './utils/format';
 
@@ -45,6 +46,7 @@ export default function App() {
     categoryExpenses,
     cashflowTrend,
     financialHealth,
+    budgetForecasts,
     loading,
     error,
     isDemo,
@@ -83,6 +85,7 @@ export default function App() {
   const [transactionSubTab, setTransactionSubTab] = useState('history'); // 'history' or 'recurring'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isHealthModalOpen, setIsHealthModalOpen] = useState(false);
 
   const [profilePic, setProfilePic] = useState(localStorage.getItem(`user_avatar_${user?.id}`) || '');
 
@@ -418,7 +421,10 @@ export default function App() {
               </div>
             </div>
             {/* Panel rekomendasi popup toggle or detail indicator */}
-            <div className="flex items-center justify-center gap-1 text-[10px] text-blue-600 font-bold bg-blue-50/50 hover:bg-blue-50 border border-blue-100/30 px-3 py-2 rounded-xl transition-all cursor-pointer w-full sm:w-auto shrink-0 active:scale-[0.98]">
+            <div 
+              onClick={() => setIsHealthModalOpen(true)}
+              className="flex items-center justify-center gap-1 text-[10px] text-blue-600 font-bold bg-blue-50/50 hover:bg-blue-50 border border-blue-100/30 px-3 py-2 rounded-xl transition-all cursor-pointer w-full sm:w-auto shrink-0 active:scale-[0.98]"
+            >
               <Info size={12} className="stroke-[2.5]" />
               <span>Detail Analisis</span>
             </div>
@@ -444,6 +450,7 @@ export default function App() {
                   addBudget={addBudget}
                   removeBudget={handleRemoveBudget}
                   categories={categories}
+                  budgetForecasts={budgetForecasts}
                 />
                 <GoalsSection
                   goals={goals}
@@ -534,6 +541,7 @@ export default function App() {
                 addBudget={addBudget}
                 removeBudget={handleRemoveBudget}
                 categories={categories}
+                budgetForecasts={budgetForecasts}
               />
             </div>
           )}
@@ -645,6 +653,62 @@ export default function App() {
         onClose={() => setIsOnboardingOpen(false)}
         user={user}
       />
+
+      {/* 10. DETAIL KESEHATAN FINANSIAL MODAL */}
+      {isHealthModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[4px] z-[100] flex items-center justify-center p-4 select-none animate-fade-in">
+          <div className="bg-white border border-slate-100 shadow-2xl rounded-3xl p-6 max-w-lg w-full relative animate-fade-in flex flex-col max-h-[85vh]">
+            <button
+              onClick={() => setIsHealthModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all focus:outline-none"
+            >
+              <X size={18} />
+            </button>
+            <div className="flex items-center gap-3.5 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 text-emerald-600">
+                <Heart size={24} className="fill-emerald-500/10 stroke-[2]" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Detail Kesehatan Finansial</h3>
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Laporan & Analisis Otomatis</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center py-5 bg-gradient-to-tr from-slate-50 to-slate-100/50 rounded-2xl border border-slate-100/80 mb-6 shrink-0">
+              <div className="text-3xl font-black text-slate-900 flex items-baseline gap-1">
+                <span>{financialHealth?.health_score}</span>
+                <span className="text-slate-400 text-xs font-semibold">/ 100</span>
+              </div>
+              <div className="text-xs font-bold text-emerald-600 mt-1.5 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">
+                {financialHealth?.rating}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest leading-none">Rekomendasi & Penilaian</h4>
+              {financialHealth?.recommendations && financialHealth.recommendations.length > 0 ? (
+                <div className="space-y-3">
+                  {financialHealth.recommendations.map((rec, i) => (
+                    <div key={i} className="flex gap-3 items-start p-3 bg-slate-50/50 rounded-xl border border-slate-100/60 hover:bg-slate-50 transition-colors">
+                      <span className="text-sm shrink-0">💡</span>
+                      <p className="text-xs text-slate-600 font-semibold leading-relaxed">{rec}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 font-medium">Belum ada rekomendasi. Catat lebih banyak transaksi untuk mendapatkan penilaian keuangan Anda.</p>
+              )}
+            </div>
+
+            <button
+              onClick={() => setIsHealthModalOpen(false)}
+              className="w-full mt-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md shadow-blue-500/10 hover:shadow-blue-500/25 transition-all text-center focus:outline-none"
+            >
+              Tutup Analisis
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
