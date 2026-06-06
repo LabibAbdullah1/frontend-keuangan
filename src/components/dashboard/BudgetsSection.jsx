@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PieChart, Plus, Trash2, X, AlertTriangle, ChevronDown, Check } from 'lucide-react';
+import { PieChart, Plus, Trash2, X, AlertTriangle, ChevronDown, Check, Sparkles } from 'lucide-react';
 import { formatRupiah } from '../../utils/format';
+import { api } from '../../services/api';
 
 const EXPENSE_FALLBACK = ['Makanan & Minuman', 'Belanja Harian', 'Transportasi', 'Utilitas & Tagihan', 'Sewa Rumah & Kos', 'Kesehatan', 'Pendidikan', 'Hiburan & Rekreasi', 'Liburan', 'Pajak & Asuransi', 'Amal & Donasi', 'Lain-lain'];
-
 
 // Format angka dengan titik pemisah ribuan saat mengetik
 const formatThousands = (val) => {
@@ -28,6 +28,31 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
   const [amount, setAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // AI Forecast State
+  const [aiForecast, setAiForecast] = useState(null);
+  const [loadingForecast, setLoadingForecast] = useState(false);
+  const [forecastError, setForecastError] = useState('');
+
+  useEffect(() => {
+    const fetchForecast = async () => {
+      setLoadingForecast(true);
+      setForecastError('');
+      try {
+        const res = await api.getFinancialForecast();
+        if (res.success && res.data) {
+          setAiForecast(res.data);
+        } else {
+          setForecastError(res.message || 'Gagal memuat prediksi AI');
+        }
+      } catch (err) {
+        setForecastError(err.message || 'Gagal terhubung ke layanan AI');
+      } finally {
+        setLoadingForecast(false);
+      }
+    };
+    fetchForecast();
+  }, [budgets?.length, transactions?.length]);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -215,6 +240,70 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
         </form>
       )}
 
+      {/* AI FINANCIAL FORECAST CARD */}
+      <div className="mb-6 p-4 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 border border-indigo-500/20 rounded-2xl text-white shadow-lg relative overflow-hidden group">
+        {/* Background Glowing Orb */}
+        <div className="absolute -right-12 -top-12 w-36 h-36 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-700" />
+        
+        <div className="flex items-center justify-between mb-3 relative z-10">
+          <div className="flex items-center gap-2">
+            <Sparkles size={14} className="text-indigo-400 animate-pulse" />
+            <h4 className="text-[10px] font-black uppercase tracking-wider text-indigo-200">Prediksi Arus Kas Bulan Depan (AI Forecast)</h4>
+          </div>
+          {aiForecast && (
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+              aiForecast.risk_level === 'HIGH' 
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
+                : aiForecast.risk_level === 'MEDIUM' 
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+            }`}>
+              Risiko {aiForecast.risk_level === 'HIGH' ? 'Tinggi' : aiForecast.risk_level === 'MEDIUM' ? 'Sedang' : 'Rendah'}
+            </span>
+          )}
+        </div>
+
+        {loadingForecast ? (
+          <div className="flex flex-col items-center justify-center py-6 text-slate-400 relative z-10">
+            <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin mb-2" />
+            <span className="text-[10px] font-semibold text-indigo-300 animate-pulse">AI sedang menganalisis kebiasaan finansial Anda...</span>
+          </div>
+        ) : forecastError ? (
+          <p className="text-xs text-slate-400 relative z-10">Gagal memuat rekomendasi prediksi AI.</p>
+        ) : aiForecast ? (
+          <div className="space-y-3 relative z-10 text-xs">
+            {/* Projections values */}
+            <div className="grid grid-cols-2 gap-4 bg-white/5 border border-white/10 p-2.5 rounded-xl">
+              <div>
+                <p className="text-[9px] text-indigo-300 font-semibold uppercase tracking-wider mb-0.5">Estimasi Pemasukan</p>
+                <p className="text-xs font-bold text-emerald-400">{formatRupiah(aiForecast.predicted_income)}</p>
+              </div>
+              <div>
+                <p className="text-[9px] text-indigo-300 font-semibold uppercase tracking-wider mb-0.5">Estimasi Pengeluaran</p>
+                <p className="text-xs font-bold text-rose-400">{formatRupiah(aiForecast.predicted_expense)}</p>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-indigo-100 font-medium leading-relaxed">
+              {aiForecast.analysis_text}
+            </p>
+
+            {aiForecast.warnings && aiForecast.warnings.length > 0 && (
+              <div className="pt-2 border-t border-white/5 space-y-1.5">
+                {aiForecast.warnings.map((warn, index) => (
+                  <div key={index} className="flex gap-2 items-start text-[11px] text-indigo-200">
+                    <span className="text-indigo-400 text-xs shrink-0">💡</span>
+                    <p className="leading-relaxed font-semibold">{warn}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400 relative z-10">Belum ada riwayat data pengeluaran yang cukup untuk membuat prediksi.</p>
+        )}
+      </div>
+
       {/* DAFTAR BUDGET PROGRESS METER */}
       <div className="space-y-5">
         {budgets.length > 0 ? (
@@ -239,7 +328,7 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
               textColor = 'text-rose-600 bg-rose-50';
               borderStatus = 'border-rose-100 bg-rose-50/10';
               statusBadge = (
-                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 uppercase tracking-tight">
+                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 uppercase tracking-tight">
                   🚨 Jebol
                 </span>
               );
@@ -248,13 +337,13 @@ export default function BudgetsSection({ budgets, transactions, addBudget, remov
               textColor = 'text-amber-600 bg-amber-50';
               borderStatus = 'border-amber-100 bg-amber-50/10';
               statusBadge = (
-                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 uppercase tracking-tight">
+                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase tracking-tight">
                   ⚠️ Risiko Tinggi
                 </span>
               );
             } else {
               statusBadge = (
-                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 uppercase tracking-tight">
+                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 uppercase tracking-tight">
                   ✓ Aman
                 </span>
               );

@@ -4,11 +4,11 @@ import {
   PieChart,
   Receipt,
   Target,
-  Wallet,
   User,
   Calculator,
   Tags,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashboardMode, changeDashboardMode, partnerInfo, isOpen, onClose }) {
@@ -28,6 +28,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashb
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'ai-chat', label: 'Tanya AI', icon: Sparkles },
     { id: 'transactions', label: 'Transaksi', icon: Receipt },
     { id: 'budgets', label: 'Anggaran', icon: PieChart },
     { id: 'categories', label: 'Kelola Kategori', icon: Tags },
@@ -47,9 +48,11 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, dashb
       {/* BRANDING */}
       <div className="h-20 flex items-center justify-between px-6 border-b border-slate-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/10 transition-transform duration-300 hover:rotate-6">
-              <Wallet size={20} className="stroke-[2.5]" />
-            </div>
+            <img 
+              src="/icon.png" 
+              alt="KeuanganKu Logo" 
+              className="w-12 h-12 object-contain rounded-xl shadow-sm transition-transform duration-300 hover:rotate-6 select-none"
+            />
             <div>
               <h1 className="text-base font-bold text-slate-900 tracking-tight leading-none">KeuanganKu</h1>
               <span className="text-[10px] font-medium text-blue-600 tracking-wider uppercase mt-1 inline-block">Pro Tracker</span>

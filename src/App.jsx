@@ -14,6 +14,9 @@ import CalculatorSection from './components/dashboard/CalculatorSection';
 import CategorySection from './components/dashboard/CategorySection';
 import Auth from './components/auth/Auth';
 import OnboardingModal from './components/layout/OnboardingModal';
+import AIChatSection from './components/dashboard/AIChatSection';
+import QuickActions from './components/dashboard/QuickActions';
+
 
 import {
   Plus,
@@ -21,7 +24,6 @@ import {
   Heart,
   Info,
   ChevronRight,
-  Wallet,
   WifiOff,
   CloudLightning,
   Sparkles,
@@ -399,38 +401,6 @@ export default function App() {
           </div>
         </header>
 
-        {/* 4. RATING KESEHATAN FINANSIAL (DI ATAS DASHBOARD) */}
-        {activeTab === 'dashboard' && (
-          <section className="mt-6 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in select-none">
-            <div className="flex items-start gap-3 w-full sm:w-auto">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-inner shrink-0 mt-0.5">
-                <Heart size={20} className="fill-white/20 stroke-[2]" />
-              </div>
-              <div className="space-y-1 min-w-0 flex-1">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:items-center gap-1 sm:gap-2 flex-wrap">
-                  <h4 className="text-xs font-bold text-slate-900 leading-tight">Skor Kesehatan Finansial:</h4>
-                  <span className="text-[10px] font-bold bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full w-max">
-                    {financialHealth?.health_score}/100 — {financialHealth?.rating}
-                  </span>
-                </div>
-                {financialHealth?.recommendations?.length > 0 && (
-                  <p className="text-[10px] text-slate-500 font-semibold break-words">
-                    👉 {financialHealth?.recommendations?.[0]}
-                  </p>
-                )}
-              </div>
-            </div>
-            {/* Panel rekomendasi popup toggle or detail indicator */}
-            <div 
-              onClick={() => setIsHealthModalOpen(true)}
-              className="flex items-center justify-center gap-1 text-[10px] text-blue-600 font-bold bg-blue-50/50 hover:bg-blue-50 border border-blue-100/30 px-3 py-2 rounded-xl transition-all cursor-pointer w-full sm:w-auto shrink-0 active:scale-[0.98]"
-            >
-              <Info size={12} className="stroke-[2.5]" />
-              <span>Detail Analisis</span>
-            </div>
-          </section>
-        )}
-
         {/* 5. SECTIONS SWITCHER */}
         <div className="mt-6 flex-1">
           {activeTab === 'dashboard' && (
@@ -438,6 +408,45 @@ export default function App() {
 
               {/* 3 Summary Cards */}
               <SummaryCards summary={summary} />
+
+              {/* Quick Action Shortcuts Grid */}
+              <QuickActions
+                setActiveTab={setActiveTab}
+                setIsModalOpen={setIsModalOpen}
+                dashboardMode={dashboardMode}
+                changeDashboardMode={changeDashboardMode}
+                partnerInfo={partnerInfo}
+              />
+
+              {/* RATING KESEHATAN FINANSIAL */}
+              <section className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in select-none">
+                <div className="flex items-start gap-3 w-full sm:w-auto">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-inner shrink-0 mt-0.5">
+                    <Heart size={20} className="fill-white/20 stroke-[2]" />
+                  </div>
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:items-center gap-1 sm:gap-2 flex-wrap">
+                      <h4 className="text-xs font-bold text-slate-900 leading-tight">Skor Kesehatan Finansial:</h4>
+                      <span className="text-[10px] font-bold bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full w-max">
+                        {financialHealth?.health_score}/100 — {financialHealth?.rating}
+                      </span>
+                    </div>
+                    {financialHealth?.recommendations?.length > 0 && (
+                      <p className="text-[10px] text-slate-500 font-semibold break-words">
+                        👉 {financialHealth?.recommendations?.[0]}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {/* Panel rekomendasi popup toggle or detail indicator */}
+                <div 
+                  onClick={() => setIsHealthModalOpen(true)}
+                  className="flex items-center justify-center gap-1 text-[10px] text-blue-600 font-bold bg-blue-50/50 hover:bg-blue-50 border border-blue-100/30 px-3 py-2 rounded-xl transition-all cursor-pointer w-full sm:w-auto shrink-0 active:scale-[0.98]"
+                >
+                  <Info size={12} className="stroke-[2.5]" />
+                  <span>Detail Analisis</span>
+                </div>
+              </section>
 
               {/* Charts Section */}
               <ChartsSection cashflowTrend={cashflowTrend} categoryExpenses={categoryExpenses} transactions={transactions} />
@@ -479,6 +488,12 @@ export default function App() {
                 />
               </div>
 
+            </div>
+          )}
+
+          {activeTab === 'ai-chat' && (
+            <div className="animate-fade-in">
+              <AIChatSection dashboardMode={dashboardMode} />
             </div>
           )}
 

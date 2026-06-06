@@ -8,7 +8,9 @@ import {
   ArrowRight, 
   ArrowLeft, 
   Check,
-  BookOpen
+  BookOpen,
+  Camera,
+  TrendingUp
 } from 'lucide-react';
 
 export default function OnboardingModal({ isOpen, onClose, user }) {
@@ -24,6 +26,20 @@ export default function OnboardingModal({ isOpen, onClose, user }) {
       icon: Sparkles,
       color: "bg-blue-50 text-blue-600 border-blue-100",
       accent: "from-blue-600 to-indigo-600"
+    },
+    {
+      title: "Pemindai Struk Belanja Otomatis (AI Scanner) 📸",
+      description: "Foto struk belanjaan fisik Anda (Indomaret, restoran, dll) atau unggah gambar. AI Gemini secara cerdas akan mendeteksi nominal total belanja, tanggal transaksi, nama toko, dan mencocokkan kategorinya secara instan.",
+      icon: Camera,
+      color: "bg-orange-50 text-orange-600 border-orange-100",
+      accent: "from-orange-500 to-amber-500"
+    },
+    {
+      title: "Prediksi Arus Kas Bulan Depan (AI Forecast) 📈",
+      description: "Analisis kebiasaan finansial bulanan Anda secara prediktif. AI Forecast memperkirakan total pemasukan, pengeluaran, dan tingkat risiko defisit cashflow bulan depan lengkap dengan saran mitigasi penting.",
+      icon: TrendingUp,
+      color: "bg-indigo-50 text-indigo-600 border-indigo-100",
+      accent: "from-indigo-600 to-purple-650"
     },
     {
       title: "Pencatatan Offline & Auto-Sync 🔒",
@@ -95,7 +111,7 @@ export default function OnboardingModal({ isOpen, onClose, user }) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-1.5">
             <BookOpen size={13} className="text-slate-400" />
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Panduan Aplikasi ({currentStep + 1}/5)</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Panduan Aplikasi ({currentStep + 1}/7)</span>
           </div>
           
           <button
@@ -180,7 +196,7 @@ export default function OnboardingModal({ isOpen, onClose, user }) {
 
           {/* Dots Indicator */}
           <div className="flex justify-center gap-1.5 mt-1">
-            {[0, 1, 2, 3, 4].map((idx) => (
+            {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentStep(idx)}

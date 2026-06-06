@@ -182,7 +182,7 @@ const request = async (path, options = {}) => {
               throw networkError;
             }
             console.warn(`[API Connection Failed] Route: ${path} (setelah refresh). Mengalihkan ke Resilient Demo Mode.`, networkError.message);
-            isDemoMode = true;
+            isDemoMode = false;
             return handleMockRequest(path, options);
           }
         } else {
@@ -246,6 +246,60 @@ const enqueueOfflineAction = (method, path, body, tempId = null) => {
   localStorage.setItem('fe_sync_queue', JSON.stringify(queue));
   console.log(`[Offline Queue] Action queued: ${method} ${path}`, { body, tempId });
 };
+
+// Helper parsing lokal luring untuk sinkronisasi/simulasi offline
+function simulateOfflineParsing(text, categoriesList) {
+  const textLower = text.toLowerCase();
+  
+  let amount = 0;
+  const numberMatches = textLower.match(/\d+[\d\.]*/g);
+  if (numberMatches) {
+    const rawNumberStr = numberMatches.reduce((a, b) => a.length > b.length ? a : b);
+    const parsedNum = parseFloat(rawNumberStr.replace(/\./g, ''));
+    if (!isNaN(parsedNum)) {
+      amount = parsedNum;
+    }
+  }
+
+  if (textLower.includes('rb') || textLower.includes('ribu')) {
+    if (amount < 1000) amount = amount * 1000;
+  }
+  if (textLower.includes('jt') || textLower.includes('juta')) {
+    if (amount < 1000000) amount = amount * 1000000;
+  }
+
+  let type = 'expense';
+  if (textLower.includes('gaji') || textLower.includes('masuk') || textLower.includes('bonus') || textLower.includes('pemasukan') || textLower.includes('terima')) {
+    type = 'income';
+  }
+
+  let note = text;
+  note = note.replace(/\b\d+[\d\.]*(?:rb|ribu|jt|juta)?\b/gi, '').trim();
+  note = note.replace(/\b(?:habis|bayar|beli|masuk|dapat|sebesar|nominal|rp)\b/gi, '').trim();
+  if (!note) note = text;
+
+  let category = 'Lain-lain';
+  const categoryNames = categoriesList.filter(c => c.type === type).map(c => c.name);
+  
+  for (const cat of categoryNames) {
+    const catWords = cat.toLowerCase().split(/[ &\/]/);
+    for (const word of catWords) {
+      if (word.length > 3 && textLower.includes(word)) {
+        category = cat;
+        break;
+      }
+    }
+    if (category !== 'Lain-lain') break;
+  }
+
+  return {
+    type,
+    amount,
+    category,
+    date: new Date().toISOString().split('T')[0],
+    note: note.slice(0, 50)
+  };
+}
 
 // Menangani request dalam mode demo (Mock)
 const handleMockRequest = (path, options = {}) => {
@@ -761,6 +815,88 @@ const handleMockRequest = (path, options = {}) => {
         health_score: Math.max(0, Math.min(100, score)),
         rating,
         recommendations
+      }
+    };
+  }
+
+  if (path.startsWith('/analysis/ai-chat')) {
+    if (method === 'POST') {
+      const msgLower = body.message.toLowerCase();
+      let reply = 'Halo! Saya KeuanganKu AI. Sepertinya aplikasi sedang berjalan luring dalam mode Demo/Offline, namun saya bisa menyimulasikan saran keuangan untuk Anda.';
+      
+      if (msgLower.includes('hemat') || msgLower.includes('tips')) {
+        reply = 'Tips Hemat KeuanganKu:\n1. Terapkan metode anggaran 50/30/20 (50% kebutuhan pokok, 30% keinginan, 20% tabungan).\n2. Catat semua pengeluaran kecil (seperti parkir/kopi) karena bocor halus seringkali berasal dari hal kecil.\n3. Masak sendiri di rumah dan batasi makan di luar maksimal 2 kali seminggu.\n4. Sebelum membeli barang impulsif, tunggu 24 jam untuk berpikir apakah barang itu benar-benar dibutuhkan.';
+      } else if (msgLower.includes('darurat') || msgLower.includes('emergency')) {
+        reply = 'Dana darurat sangat penting! Disarankan memiliki dana darurat minimal sebesar 3-6 kali pengeluaran bulanan Anda jika Anda lajang, dan 6-12 kali jika Anda sudah berkeluarga atau memiliki tanggungan. Simpanlah di instrumen likuid dan aman seperti Reksadana Pasar Uang atau rekening tabungan terpisah.';
+      } else if (msgLower.includes('investasi') || msgLower.includes('saham') || msgLower.includes('reksa')) {
+        reply = 'Untuk investasi, prinsip utamanya adalah: pahami risikonya sebelum menaruh uang Anda. Bagi pemula, mulailah dengan instrumen berisiko rendah seperti Reksadana Pasar Uang atau Obligasi Negara. Jika profil risiko Anda moderat/agresif, Anda bisa mulai mempelajari reksadana saham, emas, atau saham blue-chip.';
+      } else if (msgLower.includes('analisis') || msgLower.includes('kondisi') || msgLower.includes('saldo')) {
+        reply = 'Berdasarkan data simulasi luring, saldo dan anggaran Anda masih terpantau seimbang. Pastikan Anda disiplin mengalokasikan tabungan di awal bulan!';
+      }
+
+      return {
+        success: true,
+        data: {
+          message: reply + '\n\n*(Catatan: Ini adalah tanggapan simulasi luring)*'
+        }
+      };
+    }
+  }
+
+  if (path.startsWith('/analysis/ai-parse-transaction')) {
+    if (method === 'POST') {
+      const categories = mockDB.getCategories();
+      const mockResult = simulateOfflineParsing(body.text, categories);
+      return { success: true, data: mockResult };
+    }
+  }
+
+  if (path.startsWith('/analysis/ai-scan-receipt')) {
+    if (method === 'POST') {
+      const categories = mockDB.getCategories();
+      const randomAmount = Math.floor(Math.random() * (150000 - 35000 + 1)) + 35000;
+      
+      const expenseCategories = categories.filter(c => c.type === 'expense').map(c => c.name);
+      let category = 'Belanja Harian';
+      if (expenseCategories.length > 0) {
+        if (expenseCategories.includes('Belanja Harian')) {
+          category = 'Belanja Harian';
+        } else if (expenseCategories.includes('Makanan & Minuman')) {
+          category = 'Makanan & Minuman';
+        } else {
+          category = expenseCategories[Math.floor(Math.random() * expenseCategories.length)];
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          type: 'expense',
+          amount: randomAmount,
+          category,
+          date: new Date().toISOString().split('T')[0],
+          note: `Struk Belanja Toko Harian (Simulasi Offline)`
+        }
+      };
+    }
+  }
+
+  if (path.startsWith('/analysis/ai-forecast')) {
+    const randomIncome = Math.floor(Math.random() * (9500000 - 8000000 + 1)) + 8000000;
+    const randomExpense = Math.floor(Math.random() * (7500000 - 5000000 + 1)) + 5000000;
+    const riskLevel = randomIncome - randomExpense < 500000 ? 'MEDIUM' : 'LOW';
+    
+    return {
+      success: true,
+      data: {
+        predicted_income: randomIncome,
+        predicted_expense: randomExpense,
+        risk_level: riskLevel,
+        warnings: [
+          'Bulan depan, pengeluaran kategori Makanan & Minuman diproyeksikan stabil namun ada risiko bocor halus.',
+          'Sisihkan dana darurat ekstra minimal Rp500.000 untuk mengantisipasi pengeluaran tak terduga.'
+        ],
+        analysis_text: 'Analisis luring mode demo menunjukkan cash flow Anda berada pada level risiko aman, pertahankan pola menabung di awal bulan.'
       }
     };
   }
@@ -1488,6 +1624,22 @@ export const api = {
     }
     return res;
   },
+  chatWithAI: (message, history, mode) => request(`/analysis/ai-chat${mode ? `?mode=${mode}` : ''}`, {
+    method: 'POST',
+    body: JSON.stringify({ message, history })
+  }),
+
+  parseTransactionText: (text) => request('/analysis/ai-parse-transaction', {
+    method: 'POST',
+    body: JSON.stringify({ text })
+  }),
+
+  scanReceipt: (image, mimeType) => request('/analysis/ai-scan-receipt', {
+    method: 'POST',
+    body: JSON.stringify({ image, mimeType })
+  }),
+
+  getFinancialForecast: (mode) => request(`/analysis/ai-forecast${mode ? `?mode=${mode}` : ''}`),
 
   // Transaksi Berulang (Recurring)
   getRecurringTemplates: (mode) => request(`/recurring${mode ? `?mode=${mode}` : ''}`),

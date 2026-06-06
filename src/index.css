@@ -104,3 +104,17 @@ html {
     transform: translateY(0);
   }
 }
+
+/* AI Receipt Scanning laser line animation */
+.animate-scan-line {
+  animation: scanLine 2.5s ease-in-out infinite;
+}
+
+@keyframes scanLine {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(80px);
+  }
+}

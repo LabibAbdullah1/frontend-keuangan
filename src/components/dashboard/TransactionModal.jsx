@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, AlertTriangle, ArrowUpRight, ArrowDownLeft, ChevronDown, Check, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, AlertTriangle, ArrowUpRight, ArrowDownLeft, ChevronDown, Check, Calendar, ChevronLeft, ChevronRight, Sparkles, Camera } from 'lucide-react';
+import { api } from '../../services/api';
 
 const INCOME_FALLBACK = ['Gaji', 'Bonus', 'Investasi', 'Deposito', 'Hibah/Hadiah', 'Penjualan', 'Lain-lain'];
 const EXPENSE_FALLBACK = ['Makanan & Minuman', 'Belanja Harian', 'Transportasi', 'Utilitas & Tagihan', 'Sewa Rumah & Kos', 'Kesehatan', 'Pendidikan', 'Hiburan & Rekreasi', 'Liburan', 'Pajak & Asuransi', 'Amal & Donasi', 'Lain-lain'];
@@ -29,6 +30,15 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // AI Smart Input State
+  const [aiText, setAiText] = useState('');
+  const [isAiParsing, setIsAiParsing] = useState(false);
+  const [aiError, setAiError] = useState('');
+
+  // AI Receipt Scanner State & Ref
+  const [isScanning, setIsScanning] = useState(false);
+  const fileInputRef = useRef(null);
+
   // Helper to get active categories list
   const getCategoriesList = () => {
     const list = categories.filter(c => c.type === type).map(c => c.name);
@@ -57,6 +67,9 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
       setCategory('');
       setNote('');
       setError('');
+      setAiText('');
+      setAiError('');
+      setIsScanning(false);
       setIsDropdownOpen(false);
       setIsCalendarOpen(false);
       setViewDate(new Date());
@@ -66,8 +79,70 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
   // Set default kategori saat tipe atau list kategori berubah
   useEffect(() => {
     const list = getCategoriesList();
-    setCategory(list[0] || 'Lain-lain');
+    if (!list.includes(category)) {
+      setCategory(list[0] || 'Lain-lain');
+    }
   }, [type, categories]);
+
+  const handleAiParse = async () => {
+    if (!aiText.trim()) return;
+    setIsAiParsing(true);
+    setAiError('');
+    try {
+      const res = await api.parseTransactionText(aiText);
+      if (res.success && res.data) {
+        const { type: parsedType, amount: parsedAmount, category: parsedCategory, date: parsedDate, note: parsedNote } = res.data;
+        if (parsedType) setType(parsedType);
+        if (parsedAmount) setAmount(formatThousands(String(parsedAmount)));
+        if (parsedCategory) setCategory(parsedCategory);
+        if (parsedDate) setDate(parsedDate);
+        if (parsedNote) setNote(parsedNote);
+        setAiText(''); // Clear input on success
+      } else {
+        setAiError(res.message || 'Gagal mengurai teks transaksi');
+      }
+    } catch (err) {
+      setAiError(err.message || 'Gagal menghubungkan ke AI');
+    } finally {
+      setIsAiParsing(false);
+    }
+  };
+
+  const handleReceiptUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Str = reader.result.split(',')[1];
+      const mimeType = file.type;
+      await handleScanReceipt(base64Str, mimeType);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // Reset input value so it can be re-triggered
+  };
+
+  const handleScanReceipt = async (base64Image, mimeType) => {
+    setIsScanning(true);
+    setAiError('');
+    try {
+      const res = await api.scanReceipt(base64Image, mimeType);
+      if (res.success && res.data) {
+        const { type: parsedType, amount: parsedAmount, category: parsedCategory, date: parsedDate, note: parsedNote } = res.data;
+        if (parsedType) setType(parsedType);
+        if (parsedAmount) setAmount(formatThousands(String(parsedAmount)));
+        if (parsedCategory) setCategory(parsedCategory);
+        if (parsedDate) setDate(parsedDate);
+        if (parsedNote) setNote(parsedNote);
+      } else {
+        setAiError(res.message || 'Gagal memindai struk belanja');
+      }
+    } catch (err) {
+      setAiError(err.message || 'Gagal menghubungkan ke AI');
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   // Kunci scroll halaman latar belakang ketika modal terbuka agar user lebih fokus
   useEffect(() => {
@@ -206,6 +281,19 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
         className="bg-white w-full max-w-md border border-slate-100 shadow-2xl rounded-2xl p-6 relative overflow-hidden animate-fade-in"
         onClick={e => e.stopPropagation()}
       >
+        {/* SCANNING OVERLAY */}
+        {isScanning && (
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-40 flex flex-col items-center justify-center animate-fade-in">
+            <div className="relative w-24 h-24 mb-4 flex items-center justify-center border-2 border-dashed border-indigo-300 rounded-2xl overflow-hidden bg-indigo-50/50">
+              {/* Laser line moving up and down */}
+              <div className="absolute left-0 right-0 h-0.5 bg-indigo-600 shadow-md shadow-indigo-500/50 animate-scan-line" />
+              <Camera size={36} className="text-indigo-600 animate-pulse" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-900 animate-pulse">Memindai Struk dengan AI...</h4>
+            <p className="text-[10px] text-slate-500 mt-1">Gemini sedang menganalisis nominal & rincian struk</p>
+          </div>
+        )}
+
         {/* HEADER */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-50 mb-5">
           <h3 className="text-base font-bold text-slate-950">Catat Transaksi Baru</h3>
@@ -224,6 +312,61 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
             <span className="font-medium">{error}</span>
           </div>
         )}
+
+        {/* AI SMART INPUT */}
+        <div className="mb-4 p-3 bg-gradient-to-br from-indigo-50/70 to-blue-50/50 border border-indigo-100/60 rounded-xl">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Sparkles size={14} className="text-indigo-600 animate-pulse shrink-0" />
+            <span className="text-[10px] font-bold text-indigo-950 uppercase tracking-wider">Tulis Cepat / Pindai Struk AI</span>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Tulis cepat (cth: makan padang 25rb)..."
+              value={aiText}
+              onChange={e => setAiText(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAiParse();
+                }
+              }}
+              className="flex-1 px-3 py-2 border border-indigo-200/60 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-xs text-slate-800 placeholder:text-slate-400 bg-white"
+              disabled={isAiParsing || isScanning}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isAiParsing || isScanning}
+              title="Pindai Foto Struk"
+              className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/60 text-indigo-600 rounded-xl font-bold flex items-center justify-center gap-1 transition-all text-xs"
+            >
+              <Camera size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={handleAiParse}
+              disabled={isAiParsing || !aiText.trim() || isScanning}
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-xl font-bold flex items-center justify-center gap-1 shadow-sm transition-all text-xs"
+            >
+              {isAiParsing ? (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                'Proses'
+              )}
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleReceiptUpload}
+              accept="image/*"
+              className="hidden"
+            />
+          </div>
+          {aiError && (
+            <p className="mt-1.5 text-[10px] text-rose-600 font-medium">{aiError}</p>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-medium text-slate-600">
           

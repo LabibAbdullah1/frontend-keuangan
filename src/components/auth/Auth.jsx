@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
-  Wallet,
   ShieldCheck,
   BarChart3,
   Target,
@@ -18,12 +17,13 @@ import {
   Share,
   Smartphone,
   Check,
-  Heart
+  Heart,
+  Camera
 } from 'lucide-react';
 
 const FEATURES = [
-  { icon: BarChart3,   label: 'Anggaran & Analisis Arus Kas',  desc: 'Pantau pengeluaran bulanan per kategori dan batasi anggaran belanja Anda.' },
-  { icon: Target,      label: 'Tabungan & Kalkulator Pintar',  desc: 'Simulasikan pembagian gaji 50/30/20 serta strategi pelunasan utang.' },
+  { icon: Sparkles,    label: 'Analisis & Proyeksi AI (keuanganku AI)', desc: 'Fitur Tanya AI, input transaksi kilat, dan AI Forecast proyeksi arus kas bulan depan.' },
+  { icon: Camera,      label: 'Pemindai Struk Belanja (AI Scanner)', desc: 'Foto struk belanja Anda dan biarkan AI mengekstrak nominal serta kategorinya secara instan.' },
   { icon: Heart,       label: 'Mode Bersama Pasangan (Couple Hub)', desc: 'Hubungkan akun untuk menyatukan pencatatan arus kas berdua secara transparan.' },
   { icon: ShieldCheck, label: 'Offline-First & Auto-Sync Aman', desc: 'Mencatat lancar tanpa internet, tersinkron otomatis saat kembali online.' }
 ];
@@ -165,9 +165,11 @@ export default function Auth({ login, register }) {
               Personal Finance Hub
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-white shadow-inner backdrop-blur-sm">
-                <Wallet size={22} className="stroke-[2]" />
-              </div>
+              <img 
+                src="/icon.png" 
+                alt="KeuanganKu Logo" 
+                className="w-14 h-14 object-contain rounded-2xl bg-white p-1.5 shadow-md transition-transform duration-300 hover:rotate-6 select-none"
+              />
               <div>
                 <h1 className="text-2xl font-black text-white tracking-tight leading-none">
                   Keuangan<span className="text-blue-200">Ku</span>
@@ -214,9 +216,11 @@ export default function Auth({ login, register }) {
 
           {/* Mobile brand header */}
           <div className="md:hidden flex items-center gap-3 mb-6 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-              <Wallet size={20} className="stroke-[2]" />
-            </div>
+            <img 
+              src="/icon.png" 
+              alt="KeuanganKu Logo" 
+              className="w-12 h-12 object-contain rounded-2xl bg-white p-1.5 shadow-md shadow-blue-500/5 transition-transform duration-300 hover:rotate-6 select-none border border-slate-100"
+            />
             <div>
               <h1 className="text-lg font-black text-slate-900 leading-none">KeuanganKu</h1>
               <span className="text-[9px] font-semibold text-blue-600 uppercase tracking-widest">Pro Tracker</span>
@@ -243,12 +247,12 @@ export default function Auth({ login, register }) {
               {/* MIDDLE: Feature highlights for Mobile (since brand panel is hidden) */}
               <div className="space-y-3.5 py-2 flex-1 flex flex-col justify-center">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 text-blue-600 mt-0.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 text-blue-600 mt-0.5 animate-pulse-subtle">
                     <Sparkles size={14} className="stroke-[2.2]" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800">Offline-First & Auto-Sync</h4>
-                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">Catat keuangan kapan saja tanpa koneksi internet. Data tersinkron otomatis saat online.</p>
+                    <h4 className="text-xs font-bold text-slate-800">Asisten Keuangan AI & Proyeksi</h4>
+                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">Tanya AI untuk konsultasi cerdas dan dapatkan AI Forecast proyeksi arus kas bulan depan.</p>
                   </div>
                 </div>
 
@@ -257,8 +261,8 @@ export default function Auth({ login, register }) {
                     <Heart size={14} className="stroke-[2.2] fill-pink-600/10" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800">Couple Finance Hub</h4>
-                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">Hubungkan akun Anda dengan pasangan secara real-time untuk transparansi arus kas.</p>
+                    <h4 className="text-xs font-bold text-slate-800">Couple Hub & Pemindai Struk</h4>
+                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">Kelola kas bersama pasangan serta foto struk belanjaan Anda untuk dicatat AI secara otomatis.</p>
                   </div>
                 </div>
 
@@ -267,8 +271,8 @@ export default function Auth({ login, register }) {
                     <ShieldCheck size={14} className="stroke-[2.2]" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800">Enkripsi Data Tingkat Tinggi</h4>
-                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">Keamanan data terjamin menggunakan hashing bcrypt dan otentikasi JWT token.</p>
+                    <h4 className="text-xs font-bold text-slate-800">Offline-First & Auto-Sync Aman</h4>
+                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">Mencatat lancar meski tanpa koneksi internet. Data tersinkron otomatis saat Anda online kembali.</p>
                   </div>
                 </div>
               </div>

@@ -8,13 +8,15 @@ import {
   Calculator,
   User,
   Tags,
-  MoreHorizontal
+  MoreHorizontal,
+  Sparkles
 } from 'lucide-react';
 
 export default function BottomNav({ activeTab, setActiveTab, onAddClick }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const dropdownItems = [
+    { id: 'ai-chat', label: 'Tanya AI', icon: Sparkles },
     { id: 'categories', label: 'Kategori', icon: Tags },
     { id: 'goals', label: 'Target', icon: Target },
     { id: 'calculator', label: 'Kalkulator', icon: Calculator },
