@@ -276,11 +276,14 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none animate-fade-in">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 overflow-y-auto flex sm:items-center items-end justify-center sm:p-4 select-none animate-fade-in">
       <div 
-        className="bg-white w-full max-w-md border border-slate-100 shadow-2xl rounded-2xl p-6 relative overflow-hidden animate-fade-in"
+        className="bg-white w-full sm:max-w-md border border-slate-100 shadow-2xl sm:rounded-2xl rounded-t-3xl p-4 sm:p-6 relative my-auto sm:animate-fade-in animate-slide-up"
         onClick={e => e.stopPropagation()}
       >
+        {/* Drag Handle Indicator for Mobile Bottom Sheet */}
+        <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-3 sm:hidden shrink-0" />
+
         {/* SCANNING OVERLAY */}
         {isScanning && (
           <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-40 flex flex-col items-center justify-center animate-fade-in">
@@ -295,7 +298,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
         )}
 
         {/* HEADER */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-50 mb-5">
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-50 mb-4 sm:mb-5">
           <h3 className="text-base font-bold text-slate-950">Catat Transaksi Baru</h3>
           <button 
             onClick={onClose} 
@@ -314,12 +317,12 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
         )}
 
         {/* AI SMART INPUT */}
-        <div className="mb-4 p-3 bg-gradient-to-br from-indigo-50/70 to-blue-50/50 border border-indigo-100/60 rounded-xl">
+        <div className="mb-3.5 sm:mb-4 p-2.5 sm:p-3 bg-gradient-to-br from-indigo-50/70 to-blue-50/50 border border-indigo-100/60 rounded-xl">
           <div className="flex items-center gap-1.5 mb-2">
             <Sparkles size={14} className="text-indigo-600 animate-pulse shrink-0" />
             <span className="text-[10px] font-bold text-indigo-950 uppercase tracking-wider">Tulis Cepat / Pindai Struk AI</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2">
             <input
               type="text"
               placeholder="Tulis cepat (cth: makan padang 25rb)..."
@@ -331,7 +334,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
                   handleAiParse();
                 }
               }}
-              className="flex-1 px-3 py-2 border border-indigo-200/60 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-xs text-slate-800 placeholder:text-slate-400 bg-white"
+              className="flex-1 min-w-0 px-2.5 py-2 border border-indigo-200/60 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-xs text-slate-800 placeholder:text-[11px] sm:placeholder:text-xs bg-white"
               disabled={isAiParsing || isScanning}
             />
             <button
@@ -339,7 +342,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
               onClick={() => fileInputRef.current?.click()}
               disabled={isAiParsing || isScanning}
               title="Pindai Foto Struk"
-              className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/60 text-indigo-600 rounded-xl font-bold flex items-center justify-center gap-1 transition-all text-xs"
+              className="px-2 py-2 shrink-0 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/60 text-indigo-600 rounded-xl font-bold flex items-center justify-center gap-1 transition-all text-xs"
             >
               <Camera size={16} />
             </button>
@@ -347,7 +350,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
               type="button"
               onClick={handleAiParse}
               disabled={isAiParsing || !aiText.trim() || isScanning}
-              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-xl font-bold flex items-center justify-center gap-1 shadow-sm transition-all text-xs"
+              className="px-2.5 py-2 shrink-0 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-xl font-bold flex items-center justify-center gap-1 shadow-sm transition-all text-xs"
             >
               {isAiParsing ? (
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -368,7 +371,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs font-medium text-slate-600">
+        <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4 text-xs font-medium text-slate-600">
           
           {/* TOGGLE TIPE TRANSAKSI */}
           <div>
@@ -377,7 +380,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
               <button
                 type="button"
                 onClick={() => setType('expense')}
-                className={`py-2 px-4 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-2 px-2 sm:px-4 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 text-[11px] sm:text-xs ${
                   type === 'expense'
                     ? 'bg-white text-rose-600 shadow-sm border border-rose-100'
                     : 'text-slate-400 hover:text-slate-700'
@@ -389,7 +392,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
               <button
                 type="button"
                 onClick={() => setType('income')}
-                className={`py-2 px-4 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-2 px-2 sm:px-4 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 text-[11px] sm:text-xs ${
                   type === 'income'
                     ? 'bg-white text-emerald-600 shadow-sm border border-emerald-100'
                     : 'text-slate-400 hover:text-slate-700'
@@ -414,7 +417,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
                 placeholder="0"
                 value={amount}
                 onChange={e => setAmount(formatThousands(e.target.value))}
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm font-bold text-slate-900 placeholder:text-slate-300 bg-slate-50/10"
+                className="w-full pl-10 pr-4 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm font-bold text-slate-900 placeholder:text-slate-300 bg-slate-50/10"
               />
             </div>
           </div>
@@ -427,7 +430,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-700 bg-white flex items-center justify-between active:scale-[0.99] select-none"
+              className="w-full px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-700 bg-white flex items-center justify-between active:scale-[0.99] select-none"
             >
               <span>{category || 'Pilih Kategori'}</span>
               <ChevronDown 
@@ -473,7 +476,7 @@ export default function TransactionModal({ isOpen, onClose, addTransaction, cate
             <button
               type="button"
               onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-700 bg-white flex items-center justify-between active:scale-[0.99] select-none"
+              className="w-full px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-xs font-bold text-slate-700 bg-white flex items-center justify-between active:scale-[0.99] select-none"
             >
               <span className="flex items-center gap-2">
                 <Calendar size={15} className="text-slate-400" />

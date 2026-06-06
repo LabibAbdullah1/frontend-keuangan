@@ -39,7 +39,6 @@ export default function SummaryCards({ summary }) {
       <div className="md:col-span-1 bg-gradient-to-br from-blue-600 via-indigo-650 to-indigo-800 text-white border border-indigo-500/20 shadow-md shadow-blue-600/10 rounded-2xl p-5 sm:p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
         {/* Decorative elements */}
         <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700" />
-        <div className="absolute left-6 bottom-4 w-12 h-8 bg-white/5 rounded-lg border border-white/10 backdrop-blur-sm pointer-events-none" /> {/* Card Sim Chip look */}
         
         <div className="flex justify-between items-start relative z-10">
           <div className="space-y-1 sm:space-y-2">

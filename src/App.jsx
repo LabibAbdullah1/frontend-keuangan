@@ -79,7 +79,8 @@ export default function App() {
     updateUserProfile,
     addCategory,
     editCategory,
-    removeCategory
+    removeCategory,
+    refreshData
   } = useFinance();
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -90,6 +91,47 @@ export default function App() {
   const [isHealthModalOpen, setIsHealthModalOpen] = useState(false);
 
   const [profilePic, setProfilePic] = useState(localStorage.getItem(`user_avatar_${user?.id}`) || '');
+  const [pendingInvite, setPendingInvite] = useState(null);
+
+  // Tangkap parameter query undangan QR (?invite=email&name=username)
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteEmail = urlParams.get('invite');
+    const inviteName = urlParams.get('name');
+    if (inviteEmail) {
+      const inviteData = { email: inviteEmail, name: inviteName || inviteEmail };
+      sessionStorage.setItem('pending_invite', JSON.stringify(inviteData));
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  // Periksa sisa undangan QR setelah login berhasil
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      const savedInvite = sessionStorage.getItem('pending_invite');
+      if (savedInvite) {
+        try {
+          const parsed = JSON.parse(savedInvite);
+          if (parsed.email !== user.email) {
+            setPendingInvite(parsed);
+          } else {
+            sessionStorage.removeItem('pending_invite');
+          }
+        } catch (e) {
+          sessionStorage.removeItem('pending_invite');
+        }
+      }
+    }
+  }, [isAuthenticated, user]);
+
+  // Polling data kemitraan & undangan masuk setiap 8 detik agar real-time
+  React.useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      refreshData(true);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, refreshData]);
 
   React.useEffect(() => {
     setProfilePic(localStorage.getItem(`user_avatar_${user?.id}`) || '');
@@ -721,6 +763,95 @@ export default function App() {
             >
               Tutup Analisis
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 11: KONFIRMASI PEMINDAIAN KODE QR (SENDER FLOW) */}
+      {pendingInvite && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[3px] z-[120] flex items-center justify-center p-4 select-none animate-fade-in">
+          <div className="bg-white border border-slate-100 shadow-2xl rounded-3xl p-6 max-w-sm w-full relative animate-fade-in text-center">
+            <div className="w-16 h-16 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center mx-auto mb-4 text-2xl animate-bounce-subtle">
+              💑
+            </div>
+            <h3 className="text-base font-extrabold text-slate-900 tracking-tight mb-2">QR Code Terdeteksi!</h3>
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed mb-6">
+              Anda memindai Kode QR milik <strong className="text-slate-800">{pendingInvite.name}</strong> ({pendingInvite.email}).
+              <br/><br/>
+              Kirim undangan kemitraan sekarang untuk saling terhubung dan mengelola keuangan bersama?
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  sessionStorage.removeItem('pending_invite');
+                  setPendingInvite(null);
+                }}
+                className="flex-1 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs shadow-sm transition-all border border-slate-200/60 text-center focus:outline-none"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const targetEmail = pendingInvite.email;
+                  sessionStorage.removeItem('pending_invite');
+                  setPendingInvite(null);
+                  const res = await sendCoupleInvite(targetEmail);
+                  if (res.success) {
+                    alert('Undangan berhasil dikirim! Silakan minta pasangan Anda untuk menerima undangan tersebut di layar mereka.');
+                  } else {
+                    alert(res.message || 'Gagal mengirimkan undangan.');
+                  }
+                }}
+                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-pink-500 hover:opacity-95 text-white rounded-xl font-bold text-xs shadow-md transition-all text-center focus:outline-none"
+              >
+                Kirim Undangan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 12: POP-UP KONFIRMASI UNDANGAN MASUK (RECIPIENT FLOW) */}
+      {incomingInvites && incomingInvites.length > 0 && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[3px] z-[120] flex items-center justify-center p-4 select-none animate-fade-in">
+          <div className="bg-white border border-slate-100 shadow-2xl rounded-3xl p-6 max-w-sm w-full relative animate-fade-in text-center">
+            <div className="w-16 h-16 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center mx-auto mb-4 text-2xl animate-pulse">
+              💖
+            </div>
+            <h3 className="text-base font-extrabold text-slate-900 tracking-tight mb-2">Undangan Kemitraan Baru!</h3>
+            <p className="text-xs text-slate-550 font-semibold leading-relaxed mb-6">
+              <strong className="text-pink-600 font-black">{incomingInvites[0].requester_username}</strong> ({incomingInvites[0].requester_email}) mengundang Anda untuk menghubungkan pos keuangan bersama.
+              <br/><br/>
+              Apakah Anda setuju untuk menghubungkan akun saat ini ke Mode Pasangan?
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await rejectCoupleInvite(incomingInvites[0].id);
+                  if (!res.success) alert(res.message || 'Gagal menolak undangan');
+                }}
+                className="flex-1 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs shadow-sm transition-all border border-slate-200/60 text-center focus:outline-none"
+              >
+                Tolak
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await acceptCoupleInvite(incomingInvites[0].id);
+                  if (!res.success) {
+                    alert(res.message || 'Gagal menerima undangan');
+                  } else {
+                    alert('Kemitraan berhasil terhubung! Selamat mengelola keuangan bersama.');
+                  }
+                }}
+                className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-white rounded-xl font-bold text-xs shadow-md transition-all text-center focus:outline-none"
+              >
+                Terima
+              </button>
+            </div>
           </div>
         </div>
       )}

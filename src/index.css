@@ -118,3 +118,18 @@ html {
     transform: translateY(80px);
   }
 }
+
+/* Slide up animation for mobile bottom sheets */
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+

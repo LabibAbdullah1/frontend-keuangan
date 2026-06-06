@@ -45,6 +45,8 @@ export default function ProfileSection({
   
   // Loading states per action
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [showQrCode, setShowQrCode] = useState(false);
+
 
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
@@ -466,6 +468,45 @@ export default function ProfileSection({
                   {inviteSubmitting ? 'Mengirim...' : 'Kirim Undangan Kemitraan'}
                 </button>
               </form>
+
+              {/* TAMPILAN KODE QR SAYA */}
+              <div className="pt-4 border-t border-slate-100/80 flex flex-col items-center">
+                <span className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-2.5 w-full text-left">
+                  Atau Hubungkan via QR
+                </span>
+                
+                {!showQrCode ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowQrCode(true)}
+                    className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/50 rounded-xl font-bold text-xs shadow-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    <span>📷</span>
+                    <span>Tampilkan Kode QR Saya</span>
+                  </button>
+                ) : (
+                  <div className="bg-slate-50/50 border border-slate-200/40 rounded-2xl p-4 flex flex-col items-center justify-center w-full group/qr relative overflow-hidden animate-fade-in">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                        window.location.origin + '?invite=' + encodeURIComponent(user?.email || '') + '&name=' + encodeURIComponent(user?.username || '')
+                      )}`}
+                      alt="QR Hubungkan Pasangan"
+                      className="w-40 h-40 bg-white p-2 rounded-xl border border-slate-200/50 shadow-inner group-hover/qr:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                    <p className="text-[10px] text-slate-400 font-bold text-center mt-3 leading-relaxed">
+                      Minta pasangan Anda memindai kode QR ini<br/>dengan kamera HP mereka untuk terhubung langsung.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowQrCode(false)}
+                      className="mt-3 text-[9px] font-extrabold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-widest active:scale-95"
+                    >
+                      Sembunyikan QR Code
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Daftar Undangan Masuk */}
               {incomingInvites && incomingInvites.length > 0 && (

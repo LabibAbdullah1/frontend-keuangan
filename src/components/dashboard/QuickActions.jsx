@@ -91,21 +91,21 @@ export default function QuickActions({
   ];
 
   return (
-    <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5 select-none animate-fade-in">
+    <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-4 sm:p-5 select-none animate-fade-in">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">Akses Cepat</h3>
         <span className="text-[10px] text-blue-600 font-bold hidden sm:inline">Pintasan Fitur Utama</span>
       </div>
 
-      {/* Horizontally scrollable row on mobile, 8-column grid on desktop */}
-      <div className="flex overflow-x-auto md:grid md:grid-cols-8 gap-5 sm:gap-6 pb-2 md:pb-0 scrollbar-none snap-x snap-mandatory justify-start md:justify-items-center w-full">
+      {/* Grid: 4 columns on mobile, 8 columns on desktop */}
+      <div className="grid grid-cols-4 md:grid-cols-8 gap-y-4 gap-x-2 sm:gap-6 justify-items-center w-full">
         {actions.map((act) => {
           const Icon = act.icon;
           return (
             <button
               key={act.id}
               onClick={act.action}
-              className="flex-none w-[70px] md:w-auto snap-start flex flex-col items-center gap-2 group focus:outline-none w-full max-w-[70px]"
+              className="flex flex-col items-center gap-2 group focus:outline-none w-full max-w-[70px]"
             >
               {/* Bulatan Icon dengan Efek Hover Premium */}
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 active:scale-95 group-hover:shadow-md ${act.bgColor} border border-transparent group-hover:border-slate-100`}>
