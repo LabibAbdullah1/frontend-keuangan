@@ -185,14 +185,19 @@ const request = async (path, options = {}) => {
             isDemoMode = true;
             return handleMockRequest(path, options);
           }
-        } else {
+        } else if (refreshResponse.status === 401 || refreshResponse.status === 400) {
           console.error('[JWT Refresh Failed] Refresh Token tidak valid/kadaluarsa. Mengeluarkan user.');
           api.logout();
           throw new Error('Sesi Anda telah berakhir. Silakan masuk kembali.');
+        } else {
+          console.warn(`[JWT Refresh Server Error ${refreshResponse.status}] Mengalihkan ke Resilient Demo Mode.`);
+          isDemoMode = true;
+          return handleMockRequest(path, options);
         }
       } catch (refreshErr) {
-        api.logout();
-        throw refreshErr;
+        console.warn('[JWT Refresh Error] Gagal melakukan silent refresh karena masalah jaringan. Mengalihkan ke Resilient Demo Mode.', refreshErr.message);
+        isDemoMode = true;
+        return handleMockRequest(path, options);
       }
     } else {
       throw new Error('Koneksi terproteksi ditolak. Autentikasi tidak lengkap.');
@@ -202,6 +207,11 @@ const request = async (path, options = {}) => {
   // Jika response dari API tidak OK (misal: 400 Bad Request untuk validasi, 500 internal error)
   // Lemparkan error agar ditangani oleh UI, BUKAN dialihkan ke Demo Mode.
   if (!response.ok) {
+    if (response.status === 502 || response.status === 503 || response.status === 504) {
+      console.warn(`[API Server Error ${response.status}] Route: ${path}. Mengalihkan ke Resilient Demo Mode.`);
+      isDemoMode = true;
+      return handleMockRequest(path, options);
+    }
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
@@ -1561,14 +1571,17 @@ export const api = {
         const data = await response.json();
         _accessToken = data.accessToken;
         return _accessToken;
-      } else {
-        // Jika token gagal disegarkan (misal: refresh token kedaluwarsa), bersihkan sesi
+      } else if (response.status === 401 || response.status === 400) {
+        // Jika token gagal disegarkan karena tidak valid atau kedaluwarsa (400 atau 401), bersihkan sesi
         _accessToken = null;
         _refreshToken = null;
         _user = null;
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         window.dispatchEvent(new Event('auth-change'));
+        return null;
+      } else {
+        // Jika karena server error (500, 502, 503, 504) atau lainnya, jangan bersihkan sesi
         return null;
       }
     } catch (err) {
